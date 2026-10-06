@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tutor Mistake Identification</title>
+<meta name="description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+<script>
+  window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] }, svg: { fontCache: "global" },
+    options: { skipHtmlTags: ["script", "noscript", "style", "textarea", "pre", "code"] } };
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
+</head>
+<body>
+<main class="page">
+  <header class="titleblock">
+    <h1>Did the tutor notice the mistake? Auditing and rebuilding a BEA 2025 shared-task classifier</h1>
+    <p class="subtitle">Our submission to the BEA 2025 shared task placed 28th of 44. This is what was wrong with it, and a
+      stronger system built from what the audit found.</p>
+    <p class="meta">Aiden Huang &middot; October 2026</p>
+  </header>
+
+  <!--OVERVIEW-->
+
+  <section class="row" id="task" aria-labelledby="task-h">
+    <div class="lab"><h2 id="task-h">The task</h2></div>
+    <div class="body">
+      <p>Language models are increasingly used as maths tutors, and a good tutor's first job when a student
+        gets something wrong is to notice. The BEA 2025 shared task <a class="cite" href="#ref-1">[1]</a>, held
+        with ACL 2025, asked teams to judge tutor replies automatically. Each example is the end of a
+        tutoring dialogue in which the student has just made a mistake, followed by one tutor's next reply.
+        Track&nbsp;1, Mistake Identification, asks whether that reply recognises the mistake:</p>
+      <ul>
+        <li><b>Yes</b>: the mistake is clearly identified.</li>
+        <li><b>To some extent</b>: the reply suggests there may be a mistake but sounds unsure.</li>
+        <li><b>No</b>: the reply does not recognise it, for example by praising the answer or moving on.</li>
+      </ul>
+      <p>Every dialogue comes with replies from up to nine tutors: seven language models and one or two
+        humans. One development-set dialogue shows the range:</p>
+      <blockquote class="ex">
+        <p><span class="who">Dialogue</span>Tutor: What is 163 &minus; 156? &nbsp;Student: 13</p>
+        <p><span class="who">GPT-4 &middot; Yes</span>&ldquo;You're close, but let's try again. Remember, when you
+          subtract 156 from 163, you should get 7.&rdquo;</p>
+        <p><span class="who">Human novice &middot; To some extent</span>&ldquo;Kindly recheck your answer.&rdquo;</p>
+        <p><span class="who">Gemini &middot; To some extent</span>&ldquo;That's a great start! Let's double-check
+          that subtraction, 163 &minus; 156 equals 7.&rdquo;</p>
+        <p><span class="who">Phi-3 &middot; No</span>&ldquo;That's correct! Now, can you try solving 204 &minus; 189?&rdquo;</p>
+      </blockquote>
+      <p>The Gemini reply states the right answer yet was labelled &ldquo;To some extent&rdquo;, presumably
+        because it opens with praise. The labels are human judgements with substantial but imperfect
+        agreement (Fleiss' &kappa; of about 0.65 across the four dimensions <a class="cite" href="#ref-1">[1]</a>),
+        so no system can be expected to match them exactly.</p>
+      <p>Systems are ranked by macro-averaged F1 over the three classes, which weights the rare classes as
+        much as the common one:</p>
+      <div class="eq">\[ \mathrm{F1}_{\text{macro}} = \frac{1}{3}\sum_{c\,\in\,\{\text{Yes},\,\text{Some},\,\text{No}\}}
+        \frac{2\,P_c R_c}{P_c + R_c}, \]</div>
+      <p>where \(P_c\) and \(R_c\) are the precision and recall of class \(c\). A &ldquo;lenient&rdquo; variant
+        merges Yes and To some extent. Always answering Yes scores 0.283 on the test set.</p>
+    </div>
+  </section>
+
+  <section class="row" id="data" aria-labelledby="data-h">
+    <div class="lab"><h2 id="data-h">Data</h2></div>
+    <div class="body">
+      <p>The organisers released a labelled development set of 300 dialogues with 2,476 tutor replies, drawn
+        from the MathDial <a class="cite" href="#ref-3">[3]</a> and Bridge <a class="cite" href="#ref-4">[4]</a>
+        corpora (MRBench <a class="cite" href="#ref-2">[2]</a>), and an unlabelled test set of 191 dialogues
+        with 1,547 replies. There is no separate training set: everything a system learns comes from the
+        2,476 development replies. The test labels were never released; scores come from the organisers'
+        submission server.</p>
+      <figure>
+        <div class="fscroll"><img src="images/label_mix.png" alt="Stacked horizontal bars showing, for each of the nine tutors, the share of replies labelled Yes, To some extent and No. Llama 3.1 405B and GPT-4 are about 95% Yes; Phi-3 is 71% No; the human novice is 38% To some extent."></div>
+        <figcaption><b>Labels by tutor, development set.</b> 78% of all replies are labelled Yes, 15% No and 7%
+          To some extent. Which tutor wrote a reply says a lot about its label: predicting each tutor's most
+          common label alone is {{baselines.tutor_identity.strict_acc|pct1}} accurate, although tutor names are hidden in the test set.</figcaption>
+      </figure>
+      <p>Three properties of the data shaped everything that follows.</p>
+      <ul>
+        <li><b>Replies come in groups.</b> All replies to a dialogue share its history, the student's mistake
+          and often its numbers. Thirteen pairs of dialogues even share an identical history under different
+          ids, so the {{data.n_dev_conversations|int}} dialogues contain only {{data.n_dev_histories|int}} distinct conversations.</li>
+        <li><b>The rare classes decide the score.</b> &ldquo;To some extent&rdquo; has 174 examples. Because
+          macro-F1 weights it equally, a system's rank is set mostly by how it handles the 544 replies that are
+          not Yes.</li>
+        <li><b>The test set differs.</b> Its dialogues are longer (median {{data.test_tokens.median|int}} tokens in the submitted system's
+          format, against {{data.dev_tokens.median|int}}), and its labels are less one-sided. The organisers' majority-class baseline
+          (accuracy 0.7363 strict, 0.8255 lenient, on 1,547 replies) pins down the hidden test labels'
+          mix exactly: {{data.test_label_counts_derived.Yes|int}} Yes, {{data.test_label_counts_derived.To some extent|int}} To some extent
+          and {{data.test_label_counts_derived.No|int}} No, that is 73.6%, 8.9% and 17.5%, against
+          78.0%, 7.0% and 14.9% in development.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row" id="ala" aria-labelledby="ala-h">
+    <div class="lab"><h2 id="ala-h">The submitted system</h2></div>
+    <div class="body">
+      <p>Our team, ALA, entered Track&nbsp;1 in April 2025 with a fine-tuned BERT classifier
+        <a class="cite" href="#ref-5">[5]</a> written in a Colab notebook:</p>
+      <ul>
+        <li><b>Input:</b> one string, <code>"Conversation history: {history}\nTutor: {response}"</code>, cut at
+          512 tokens.</li>
+        <li><b>Model:</b> <code>bert-base-uncased</code> with a three-way classification head.</li>
+        <li><b>Training:</b> the Hugging Face <code>Trainer</code> defaults with a learning rate of
+          1&times;10<sup>&minus;5</sup>, batches of 16 and 4 epochs, on a random 80% of the development
+          replies. The weights after the last epoch were used.</li>
+        <li><b>Validation:</b> the other 20%, 496 replies: macro-F1 0.643, accuracy 86.3%.</li>
+      </ul>
+      <p>On the hidden test set it scored <span class="old">macro-F1 0.636</span> (accuracy 84.2%; lenient
+        macro-F1 0.849), 28th of the 44 teams on the official leaderboard. The winner scored 0.718.</p>
+      <figure>
+        <div class="fscroll"><img src="images/leaderboard.png" alt="Bar chart of the 44 teams' test macro-F1 in rank order, from 0.718 down to 0.295, with ALA highlighted at rank 28 with 0.636 and a dashed line at the always-Yes baseline of 0.283."></div>
+        <figcaption><b>Official Track 1 leaderboard</b>, each team's best submission
+          <a class="cite" href="#ref-1">[1]</a>.</figcaption>
+      </figure>
+      <!--ALA-REPRO-->
+    </div>
+  </section>
+
+  <section class="row" id="audit" aria-labelledby="audit-h">
+    <div class="lab"><h2 id="audit-h">What went wrong</h2></div>
+    <div class="body">
+      <p>Reading the notebook again, and re-running it, turned up four problems. Each one either hid how good
+        the model really was or limited how good it could be.</p>
+
+      <h3>1. The validation set leaked</h3>
+      <p>The 80/20 split was drawn over individual replies, so the eight or nine replies to a dialogue were
+        scattered across both sides. Every one of the 496 validation replies had siblings from the same
+        dialogue in the training data. The test set, by contrast, consists of dialogues the model has never
+        seen. A validation score measured this way answers an easier question than the one the leaderboard
+        asks, and it cannot be trusted to choose between models.</p>
+      <!--AUDIT-LEAK-->
+
+      <h3>2. Long dialogues lost the reply being judged</h3>
+      <p>The input put the dialogue history first and the reply last, then cut everything after token 512.
+        When a dialogue is long, the cut falls on the reply, the only part of the input the label is about.
+        This mattered far more on the test set than in development: {{data.test_tokens.over_512|int}} test inputs (12%) were cut against
+        {{data.dev_tokens.over_512|int}} (4%), and for {{data.test_tokens.response_lost|int}} test replies nothing of the reply survived, so the model had to guess from the
+        history alone.</p>
+      <figure>
+        <div class="fscroll"><img src="images/lengths.png" alt="Two histograms of input length in tokens, development and test, with the part beyond 512 tokens highlighted. 94 development inputs and 186 test inputs exceed 512 tokens."></div>
+        <figcaption><b>Input lengths in the submitted format.</b> Highlighted bars exceed the 512-token
+          limit. The short cluster near 75 tokens is the Bridge dialogues; MathDial dialogues include a full
+          worked solution and run to several hundred tokens.</figcaption>
+      </figure>
+
+      <h3>3. Nothing addressed the imbalance</h3>
+      <p>Plain cross-entropy on a 78% majority class rewards predicting Yes. Neither the loss nor the
+        decision rule did anything for the two classes that decide macro-F1.</p>
+
+      <h3>4. Settings that did nothing</h3>
+      <ul>
+        <li><code>eval_steps=500</code> was set, but evaluation was never switched on, so the model was not
+          evaluated during training.</li>
+        <li>Training ran 496 steps, fewer than the 500 between checkpoints, so no checkpoint was ever saved
+          and model selection was impossible.</li>
+        <li>The final model was never retrained on all the labelled data, leaving 20% of an already small set
+          unused.</li>
+        <li>The tokenizer was reloaded from <code>distilbert-base-uncased</code> for the BERT model. I checked
+          this one: the two tokenizers produce identical ids, so it did no harm.</li>
+      </ul>
+      <!--AUDIT-BASELINE-->
+    </div>
+  </section>
+
+  <section class="row" id="protocol" aria-labelledby="protocol-h">
+    <div class="lab"><h2 id="protocol-h">Evaluation protocol</h2></div>
+    <div class="body">
+      <p>Before changing the model I fixed the measurement, because a better model is only recognisable with
+        a trustworthy score.</p>
+      <ul>
+        <li><b>Conversation-grouped cross-validation.</b> The 2,476 development replies are split into five
+          folds such that every reply to a conversation (identical histories count as one conversation) sits
+          in the same fold, with the label mix balanced across folds. Each fold is predicted by a model
+          trained on the other four, giving one honest prediction for every reply.</li>
+        <li><b>One number per system.</b> Macro-F1 is computed over all 2,476 pooled predictions. The 95%
+          intervals come from a bootstrap that resamples whole conversations, 2,000 times, since replies to
+          the same conversation are not independent. Differences between two systems are bootstrapped on the
+          same resamples, which makes them much tighter than the individual intervals.</li>
+        <li><b>Calibrated against reality.</b> The old system is run through the same protocol, so its
+          cross-validated score can be compared with its known official test score of 0.636.</li>
+        <li><b>The test set is used once.</b> All design decisions were made on cross-validation. The final
+          system's test predictions were scored once on the organisers' post-competition submission server.</li>
+      </ul>
+      <!--PROTOCOL-CALIBRATION-->
+    </div>
+  </section>
+
+  <section class="row" id="method" aria-labelledby="method-h">
+    <div class="lab"><h2 id="method-h">New method</h2></div>
+    <div class="body">
+      <p>The new system keeps the old one's basic shape, a fine-tuned transformer encoder, and changes what
+        the audit pointed at. Each change is a separate step so its effect can be measured on its own.</p>
+
+      <h3>Input: the reply first, never cut</h3>
+      <p>The reply becomes the first segment of a sentence pair and the history the second. If the pair is
+        longer than 512 tokens, the history is shortened from the middle: it keeps its first 96 tokens,
+        which hold the problem statement, and as much of its end as fits, which holds the student's latest
+        turn and so the mistake itself. The two parts are joined by an ellipsis. Replies keep up to 252
+        tokens, which only matters for degenerate ones: the 16 development replies that are longer all come
+        from Phi-3, which kept generating invented follow-up turns after its actual reply, and the reply
+        itself is at the start. On the test set, between 199 and 331 histories are shortened this way,
+        depending on the model's tokenizer.</p>
+
+      <h3>Training recipe</h3>
+      <p>A learning rate of 2&times;10<sup>&minus;5</sup> with a 10% linear warm-up, and a class-weighted loss.
+        The weights are proportional to \(1/\sqrt{n_c}\), where \(n_c\) is the number of training examples of
+        class \(c\), normalised to average 1 over the training set: 0.74 for Yes, 2.46 for To some extent and
+        1.69 for No. This is a deliberately milder correction than full inverse-frequency weighting (which
+        would weight the rarest class eleven times the majority), because the decision rule below makes a
+        final, data-driven adjustment.</p>
+
+      <h3>Multi-task supervision</h3>
+      <p>Every development reply is also labelled for three other dimensions of the same taxonomy
+        <a class="cite" href="#ref-2">[2]</a>: whether it locates the mistake, provides guidance, and is
+        actionable. These are closely tied to mistake identification (366 of the 370 &ldquo;No&rdquo; replies
+        also fail to locate the mistake) and come free with the data. The classifier gets three extra
+        three-way heads, trained alongside the main one; only the Mistake Identification head is used to
+        predict. For a batch \(B\) the loss is</p>
+      <div class="eq">\[ \mathcal{L} = \frac{\sum_{i\in B} w_{y_i}\,\ell_{\text{MI}}(i)}{\sum_{i\in B} w_{y_i}}
+        \;+\; \frac{\lambda}{3}\sum_{d\,\in\,\{\text{ML},\,\text{PG},\,\text{AC}\}} \frac{1}{|B|}\sum_{i\in B}\ell_{d}(i),
+        \qquad \lambda = 0.5, \]</div>
+      <p>where each \(\ell\) is a cross-entropy and \(w\) the class weights above.</p>
+
+      <h3>Backbones and ensemble</h3>
+      <p>The full recipe is trained on four encoders of similar size: BERT, RoBERTa
+        <a class="cite" href="#ref-6">[6]</a>, MPNet <a class="cite" href="#ref-7">[7]</a> (the
+        <code>all-mpnet-base-v2</code> checkpoint <a class="cite" href="#ref-8">[8]</a> used by the
+        fifth-placed team <a class="cite" href="#ref-10">[10]</a>) and ModernBERT
+        <a class="cite" href="#ref-9">[9]</a>. Each is trained five times, once per cross-validation fold,
+        and the final system averages the class probabilities of all of them. The ensemble was fixed in
+        advance, before any result was seen, as every full-recipe backbone that finished. Under
+        cross-validation each reply is predicted only by models that never saw its conversation.</p>
+
+      <h3>Decision rule</h3>
+      <p>A model trained with cross-entropy picks the most probable class, which is not the choice that
+        maximises macro-F1. The last step adds a constant to the log-probabilities of the two minority classes
+        before taking the largest:</p>
+      <div class="eq">\[ \hat y = \arg\max_{c}\; \big(\log \bar p_c + b_c\big), \qquad b_{\text{Yes}} = 0, \]</div>
+      <p>where \(\bar p\) is the ensemble's averaged probability and \(b_{\text{Some}}\), \(b_{\text{No}}\) are
+        chosen by grid search to maximise macro-F1. The reported score is cross-fitted: the offsets used for
+        each fold are tuned on the other four folds only. The offsets used on the test set are tuned on all
+        2,476 out-of-fold predictions.</p>
+    </div>
+  </section>
+
+  <!--RESULTS-->
+
+  <!--TAIL-->
+
+</main>
+</body>
+</html>
