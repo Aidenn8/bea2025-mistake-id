@@ -109,13 +109,19 @@ def data_section(dev, test):
 # ------------------------------------------------------------------ old system
 def ala_section(y, groups, official):
     out = {"official_test": official}
-    nb = load_run("ala_bert", "notebook", 0) if (RUNS / "ala_bert" / "notebook-s0" / "fold0.npz").exists() else None
-    if nb:
+    # Validation scores printed by the 2025 notebook (cell 18) for the submitted model.
+    out["notebook_original_reported"] = {"strict_f1": 0.6429468030944046, "strict_acc": 0.8629032258064516,
+                                         "lenient_f1": 0.8406567910048188, "lenient_acc": 0.9274193548387096}
+    for key, name in (("notebook_split", "ala_bert"), ("notebook_split_seed1", "ala_bert_seed1"),
+                      ("notebook_split_seed2", "ala_bert_seed2")):
+        if not (RUNS / name / "notebook-s0" / "fold0.npz").exists():
+            continue
+        nb = load_run(name, "notebook", 0)
         mask = ~np.isnan(nb["oof"][:, 0])
-        out["notebook_split"] = scores(y[mask], nb["oof"][mask].argmax(-1))
-        out["notebook_split"]["n"] = int(mask.sum())
-        out["notebook_original_reported"] = {"strict_f1": 0.6429468030944046, "strict_acc": 0.8629032258064516,
-                                             "lenient_f1": 0.8406567910048188, "lenient_acc": 0.9274193548387096}
+        pred = nb["oof"][mask].argmax(-1)
+        out[key] = scores(y[mask], pred) | {"n": int(mask.sum()), "seed": nb["meta"][0]["config"]["seed"],
+                                            "pred_counts": np.bincount(pred, minlength=3).tolist(),
+                                            "test_pred_counts": np.bincount(nb["test"].argmax(-1), minlength=3).tolist()}
     for split in ("grouped", "leaky"):
         run = available("ala_bert", split)
         if run:
@@ -261,6 +267,13 @@ def main():
         preds["final"] = final_arrays["pred"]
     summary["slices"] = slices_section(y, dev, preds)
     summary["test"] = test_section(test, final_arrays)
+    # Scores returned by the organisers' submission server (post-shared-task phase), entered by hand
+    # from the Codabench result page into results/official_scores.json.
+    off = RES / "official_scores.json"
+    if off.exists():
+        summary["official_scores"] = json.loads(off.read_text())
+        if "final" in summary["official_scores"]:
+            summary["official_new"] = [summary["official_scores"]["final"]["strict_f1"], "New system"]
     (RES / "summary.json").write_text(json.dumps(round_floats(summary), indent=1))
     print(json.dumps(round_floats({k: summary[k] for k in ("ala",)}), indent=1)[:3000])
     for name, s in summary["systems"].items():

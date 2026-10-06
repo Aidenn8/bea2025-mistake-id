@@ -166,13 +166,179 @@ def fig_leaderboard(S, new_score=None, new_label=None):
     save(fig, "leaderboard.png")
 
 
+# ---------------------------------------------------------------- how the old system scores, by protocol
+def fig_protocol(S):
+    A = S["ala"]
+    rows = []   # (label, value, lo, hi, style)
+    rows.append(("Reported in the 2025 notebook\n80/20 split of replies", A["notebook_original_reported"]["strict_f1"], None, None, "hollow"))
+    for name, seed in (("notebook_split", 42), ("seed1", 1), ("seed2", 2)):
+        r = A.get(name if name == "notebook_split" else f"notebook_split_{name}")
+        if r:
+            rows.append((f"Same recipe retrained, seed {seed}\nsame 80/20 split", r["strict_f1"], None, None, "dot"))
+    for split, label in (("leaky", "Cross-validation over replies\n(leaky), 5 folds pooled"),
+                         ("grouped", "Cross-validation over conversations\n5 folds pooled")):
+        r = A.get(f"cv_{split}")
+        if r:
+            rows.append((label, r["pooled"]["strict_f1"], *r["strict_f1_ci"], "dot"))
+    rows.append(("Official hidden test set", A["official_test"]["strict_f1"], None, None, "solid"))
+    fig, ax = plt.subplots(figsize=(TEXT, 0.48 * len(rows) + 0.9))
+    hbar_axes(ax)
+    for i, (label, v, lo, hi, style) in enumerate(rows):
+        y = len(rows) - 1 - i
+        if lo is not None:
+            ax.plot([lo, hi], [y, y], color=OLD, lw=1.6, solid_capstyle="butt")
+        face = {"hollow": BG, "dot": OLD, "solid": OLD}[style]
+        ax.plot(v, y, marker="D" if style == "solid" else "o", ms=7.5, mfc=face, mec=OLD, mew=1.6, ls="none", zorder=3)
+        say(ax, (max(v, hi or v), y), f"{v:.3f}", color=INK, dx=10, size=8.8)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.8)
+    ax.set_xlim(0.45, 0.75)
+    ax.set_xlabel("Macro-F1 (strict) of the submitted system's recipe")
+    save(fig, "protocol.png")
+
+
+# ---------------------------------------------------------------- ablation ladder and backbones
+LADDER_ROWS = [("ala_bert", "ALA, submitted recipe (BERT)"), ("bert_pair", "+ input: reply first, history trimmed"),
+               ("bert_pair_opt", "+ warm-up, learning rate, class weights"), ("bert_pair_opt_mt", "+ multi-task heads"),
+               ("roberta_mt", "Full recipe, RoBERTa"), ("mpnet_mt", "Full recipe, MPNet"),
+               ("modernbert_mt", "Full recipe, ModernBERT")]
+
+
+def fig_ladder(S):
+    sysd, F = S["systems"], S.get("final")
+    rows = [(lab, sysd[k]["pooled"]["strict_f1"], *sysd[k]["strict_f1_ci"], OLD if k == "ala_bert" else NEUTRAL)
+            for k, lab in LADDER_ROWS if k in sysd]
+    if F:
+        rows.append((f"Ensemble of {len(F['members'])} backbones", F["ensemble_argmax"]["strict_f1"],
+                     *F["ensemble_argmax"]["strict_f1_ci"], NEW))
+        rows.append(("Ensemble + tuned decision rule", F["ensemble_crossfit_offsets"]["strict_f1"],
+                     *F["ensemble_crossfit_offsets"]["strict_f1_ci"], NEW))
+    if not rows:
+        return
+    fig, ax = plt.subplots(figsize=(TEXT, 0.42 * len(rows) + 1.0))
+    hbar_axes(ax)
+    tf = S["baselines"]["tfidf_response_grouped"]["strict_f1"]
+    ax.axvline(tf, color=FAINT, lw=0.9, ls=(0, (3, 3)), zorder=0)
+    say(ax, (tf, len(rows) - 0.4), "TF-IDF + logistic\nregression, reply only", color=DIM, dx=-4, ha="right", va="bottom", size=8.2)
+    for i, (label, v, lo, hi, col) in enumerate(rows):
+        y = len(rows) - 1 - i
+        ax.plot([lo, hi], [y, y], color=col, lw=1.6, solid_capstyle="butt")
+        ax.plot(v, y, "o", ms=7, color=col, zorder=3)
+        say(ax, (hi, y), f"{v:.3f}", color=INK, dx=8, size=8.8)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.8)
+    ax.set_xlim(0.45, 0.8)
+    ax.set_ylim(-0.6, len(rows) - 0.1)
+    ax.set_xlabel("Macro-F1 (strict), conversation-grouped 5-fold cross-validation, with 95% interval")
+    save(fig, "ladder.png")
+
+
+# ---------------------------------------------------------------- old vs new, per class
+def fig_per_class(S):
+    sl = S["slices"]
+    if "ala" not in sl or "final" not in sl:
+        return
+    classes = ["Yes", "To some extent", "No"]
+    fig, ax = plt.subplots(figsize=(TEXT, 2.5))
+    hbar_axes(ax)
+    for j, (key, col, name) in enumerate((("ala", OLD, "ALA recipe"), ("final", NEW, "New system"))):
+        vals = [sl[key]["per_class"][f"f1_{c}"] for c in classes]
+        ys = np.arange(len(classes))[::-1] + (0.18 if j == 0 else -0.18)
+        ax.barh(ys, vals, height=0.34, color=col, label=name)
+        for y, v in zip(ys, vals):
+            say(ax, (v, y), f"{v:.2f}", color=INK, dx=6, size=8.6)
+    ax.set_yticks(np.arange(len(classes))[::-1], classes)
+    ax.set_xlim(0, 1.05)
+    ax.set_xlabel("F1 per class, cross-validated")
+    ax.legend(loc="lower right", ncol=1)
+    save(fig, "per_class.png")
+
+
+def fig_confusion(S):
+    sysd, F = S["systems"], S.get("final")
+    if "ala_bert" not in sysd or not F:
+        return
+    mats = [("ALA recipe", np.array(sysd["ala_bert"]["confusion"]), OLD), ("New system", np.array(F["confusion"]), NEW)]
+    fig, axes = plt.subplots(1, 2, figsize=(TEXT, 3.0))
+    names = ["Yes", "Some", "No"]
+    for ax, (title, cm, col) in zip(axes, mats):
+        ax.grid(False)
+        frac = cm / cm.sum(1, keepdims=True)
+        rgb = np.array(matplotlib.colors.to_rgb(col))
+        img = np.array([[rgb * f + np.array([0.06, 0.06, 0.06]) * (1 - f) for f in row] for row in frac])
+        ax.imshow(img, aspect="equal")
+        for i in range(3):
+            for j in range(3):
+                ax.text(j, i, f"{frac[i, j]:.0%}\n{cm[i, j]}", ha="center", va="center", fontsize=8.6,
+                        color="#ffffff" if frac[i, j] < 0.75 else "#000000")
+        ax.set_xticks(range(3), names)
+        ax.set_yticks(range(3), names)
+        ax.tick_params(length=0)
+        for s in ax.spines.values():
+            s.set_visible(False)
+        ax.set_xlabel("Predicted")
+        ax.set_ylabel("True label")
+        ax.set_title(title, fontsize=9.8)
+    save(fig, "confusion.png")
+
+
+def fig_by_length(S):
+    sl = S["slices"]
+    if "ala" not in sl or "final" not in sl:
+        return
+    bins = list(sl["ala"]["by_length"])
+    fig, ax = plt.subplots(figsize=(TEXT, 2.6))
+    x = np.arange(len(bins))
+    for key, col, name, dx in (("ala", OLD, "ALA recipe", -0.17), ("final", NEW, "New system", 0.17)):
+        v = [sl[key]["by_length"][b]["strict_acc"] for b in bins]
+        ax.bar(x + dx, v, width=0.32, color=col, label=name)
+        for xi, vi in zip(x + dx, v):
+            say(ax, (xi, vi), f"{vi:.0%}", color=INK, dy=4, ha="center", va="bottom", size=8.2)
+    labels = [f"{b.split('-')[0]}–{b.split('-')[1]}" if b.split("-")[1] != "10000" else f"over {b.split('-')[0]}" for b in bins]
+    ns = [sl["ala"]["by_length"][b]["n"] for b in bins]
+    ax.set_xticks(x, [f"{lab}\n{n} replies" for lab, n in zip(labels, ns)])
+    ax.set_ylim(0.5, 1.02)
+    ax.yaxis.set_major_formatter(mticker.PercentFormatter(1.0, decimals=0))
+    ax.set_ylabel("Accuracy")
+    ax.set_xlabel("Input length in the submitted format (BERT tokens)")
+    ax.legend(loc="upper right", ncol=2, bbox_to_anchor=(1, 1.16))
+    save(fig, "by_length.png")
+
+
+def fig_by_tutor(S):
+    sl = S["slices"]
+    if "ala" not in sl or "final" not in sl:
+        return
+    tutors = sorted(sl["ala"]["by_tutor"], key=lambda t: sl["final"]["by_tutor"][t]["strict_acc"])
+    fig, ax = plt.subplots(figsize=(TEXT, 3.3))
+    hbar_axes(ax)
+    for i, t in enumerate(tutors):
+        a, b = sl["ala"]["by_tutor"][t]["strict_acc"], sl["final"]["by_tutor"][t]["strict_acc"]
+        ax.plot([a, b], [i, i], color=AXIS, lw=1.6, zorder=1)
+        ax.plot(a, i, "o", ms=7, color=OLD, zorder=2)
+        ax.plot(b, i, "o", ms=7, color=NEW, zorder=3)
+        say(ax, (max(a, b), i), f"{a:.0%} → {b:.0%}", color=DIM, dx=9, size=8.4)
+    ax.set_yticks(range(len(tutors)), [TUTOR_NAME.get(t, t) for t in tutors])
+    ax.xaxis.set_major_formatter(mticker.PercentFormatter(1.0, decimals=0))
+    ax.set_xlim(0.5, 1.08)
+    ax.set_xlabel("Accuracy on the tutor's replies, cross-validated")
+    h = [plt.Line2D([], [], marker="o", ls="none", color=OLD, ms=7), plt.Line2D([], [], marker="o", ls="none", color=NEW, ms=7)]
+    ax.legend(h, ["ALA recipe", "New system"], loc="lower left", bbox_to_anchor=(0, 1.0), ncol=2)
+    save(fig, "by_tutor.png")
+
+
 def main():
     S = load_summary()
     if S is None:
         sys.exit("results/summary.json missing; run scripts/analyze.py first")
     fig_label_mix(S)
     fig_lengths(S)
-    fig_leaderboard(S)
+    final_test = S.get("official_new")
+    fig_leaderboard(S, *(final_test if final_test else (None, None)))
+    fig_protocol(S)
+    fig_ladder(S)
+    fig_per_class(S)
+    fig_confusion(S)
+    fig_by_length(S)
+    fig_by_tutor(S)
 
 
 if __name__ == "__main__":

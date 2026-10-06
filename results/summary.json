@@ -190,12 +190,51 @@
    "lenient_acc": 0.914,
    "rank": 28,
    "teams": 44
+  },
+  "notebook_original_reported": {
+   "strict_f1": 0.64295,
+   "strict_acc": 0.8629,
+   "lenient_f1": 0.84066,
+   "lenient_acc": 0.92742
+  },
+  "notebook_split": {
+   "strict_f1": 0.54321,
+   "strict_acc": 0.84677,
+   "lenient_f1": 0.83685,
+   "lenient_acc": 0.92137,
+   "f1_Yes": 0.91021,
+   "f1_To some extent": 0.0,
+   "f1_No": 0.71942,
+   "n": 496,
+   "seed": 42,
+   "pred_counts": [
+    432,
+    1,
+    63
+   ],
+   "test_pred_counts": [
+    1303,
+    2,
+    242
+   ]
   }
  },
  "systems": {},
  "final": null,
  "slices": {},
  "test": {
+  "ala_replica": {
+   "counts": {
+    "Yes": 1303,
+    "To some extent": 2,
+    "No": 242
+   },
+   "cut_rows_counts": {
+    "Yes": 153,
+    "To some extent": 0,
+    "No": 33
+   }
+  },
   "n_cut_rows": 186
  }
 }
