@@ -153,22 +153,38 @@ def system_entry(run, y, groups, ref_pred=None):
     ev["minutes_per_fold"] = float(np.mean([m["total_seconds"] for m in run["meta"]]) / 60)
     if ref_pred is not None:
         ev["vs_ala"] = paired_difference(y, pred, ref_pred, groups, n_boot=N_BOOT)
+    # The same model with the tuned decision rule (offsets cross-fitted over the folds).
+    rule_pred, offs = crossfit_offsets(run["oof"], y, run["fold"])
+    ev["rule"] = scores(y, rule_pred)
+    ci = bootstrap(y, {"m": rule_pred}, groups, n_boot=N_BOOT)["m"]
+    ev["rule"]["strict_f1_ci"] = [ci["lo"], ci["hi"]]
+    ev["rule"]["mean_offsets"] = np.mean(offs, axis=0).tolist()
+    ev["_rule_pred"] = rule_pred
     return ev
 
 
 def ladder_section(y, groups):
+    """Every single-model system, each with and without the decision rule. Paired differences
+    against the previous ladder step and against ALA are computed with the rule applied to both
+    sides, since the rule is part of the method and helps the old recipe too."""
     out, prev = {}, None
     ala = available("ala_bert")
     ref = ala["oof"].argmax(-1) if ala else None
+    ala_rule = None
     for name in LADDER + [m for m in FINAL_MEMBERS if m not in LADDER]:
         run = available(name)
         if not run:
             continue
         entry = system_entry(run, y, groups, ref)
+        rule_pred = entry.pop("_rule_pred")
+        if name == "ala_bert":
+            ala_rule = rule_pred
+        elif ala_rule is not None:
+            entry["rule_vs_ala_rule"] = paired_difference(y, rule_pred, ala_rule, groups, n_boot=N_BOOT)
         if prev is not None and name in LADDER:
-            entry["vs_previous"] = paired_difference(y, run["oof"].argmax(-1), prev, groups, n_boot=N_BOOT)
+            entry["rule_vs_previous"] = paired_difference(y, rule_pred, prev, groups, n_boot=N_BOOT)
         if name in LADDER:
-            prev = run["oof"].argmax(-1)
+            prev = rule_pred
         entry["label"] = NAMES.get(name, name)
         out[name] = entry
     return out

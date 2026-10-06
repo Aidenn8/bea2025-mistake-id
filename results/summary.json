@@ -396,6 +396,24 @@
     "hi": 0.0,
     "p_le_0": 1.0
    },
+   "rule": {
+    "strict_f1": 0.60587,
+    "strict_acc": 0.83562,
+    "lenient_f1": 0.81568,
+    "lenient_acc": 0.90913,
+    "f1_Yes": 0.90624,
+    "f1_To some extent": 0.22695,
+    "f1_No": 0.68443,
+    "strict_f1_ci": [
+     0.57444,
+     0.63642
+    ],
+    "mean_offsets": [
+     0.0,
+     1.8,
+     0.7
+    ]
+   },
    "label": "ALA (submitted system)"
   },
   "bert_pair_opt_mt": {
@@ -503,11 +521,35 @@
     "hi": 0.02296,
     "p_le_0": 0.7625
    },
-   "vs_previous": {
-    "diff": -0.01408,
-    "lo": -0.05204,
-    "hi": 0.02296,
-    "p_le_0": 0.7625
+   "rule": {
+    "strict_f1": 0.63975,
+    "strict_acc": 0.83885,
+    "lenient_f1": 0.84361,
+    "lenient_acc": 0.92811,
+    "f1_Yes": 0.91164,
+    "f1_To some extent": 0.27895,
+    "f1_No": 0.72866,
+    "strict_f1_ci": [
+     0.61049,
+     0.66986
+    ],
+    "mean_offsets": [
+     0.0,
+     0.88,
+     -0.65
+    ]
+   },
+   "rule_vs_ala_rule": {
+    "diff": 0.03388,
+    "lo": 0.00974,
+    "hi": 0.05839,
+    "p_le_0": 0.0045
+   },
+   "rule_vs_previous": {
+    "diff": 0.03388,
+    "lo": 0.00974,
+    "hi": 0.05839,
+    "p_le_0": 0.0045
    },
    "label": "+ multi-task"
   },
@@ -616,6 +658,30 @@
     "hi": 0.06245,
     "p_le_0": 0.0245
    },
+   "rule": {
+    "strict_f1": 0.66003,
+    "strict_acc": 0.83239,
+    "lenient_f1": 0.85109,
+    "lenient_acc": 0.92892,
+    "f1_Yes": 0.90776,
+    "f1_To some extent": 0.32889,
+    "f1_No": 0.74344,
+    "strict_f1_ci": [
+     0.6315,
+     0.68677
+    ],
+    "mean_offsets": [
+     0.0,
+     1.15,
+     0.6
+    ]
+   },
+   "rule_vs_ala_rule": {
+    "diff": 0.05415,
+    "lo": 0.02697,
+    "hi": 0.08089,
+    "p_le_0": 0.0
+   },
    "label": "RoBERTa-base"
   },
   "mpnet_mt": {
@@ -721,6 +787,30 @@
     "diff": 0.05882,
     "lo": 0.02637,
     "hi": 0.09228,
+    "p_le_0": 0.0
+   },
+   "rule": {
+    "strict_f1": 0.66277,
+    "strict_acc": 0.86147,
+    "lenient_f1": 0.86189,
+    "lenient_acc": 0.93215,
+    "f1_Yes": 0.9223,
+    "f1_To some extent": 0.30263,
+    "f1_No": 0.76338,
+    "strict_f1_ci": [
+     0.63137,
+     0.69591
+    ],
+    "mean_offsets": [
+     0.0,
+     0.34,
+     -0.23
+    ]
+   },
+   "rule_vs_ala_rule": {
+    "diff": 0.05689,
+    "lo": 0.03131,
+    "hi": 0.08216,
     "p_le_0": 0.0
    },
    "label": "MPNet"

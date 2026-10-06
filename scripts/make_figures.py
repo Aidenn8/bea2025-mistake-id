@@ -204,30 +204,44 @@ LADDER_ROWS = [("ala_bert", "ALA, submitted recipe (BERT)"), ("bert_pair", "+ in
 
 
 def fig_ladder(S):
+    """Each system twice: hollow = plain argmax, filled = with the tuned decision rule (and its
+    95% interval). The exploratory conversation-aware stage is a diamond."""
     sysd, F = S["systems"], S.get("final")
-    rows = [(lab, sysd[k]["pooled"]["strict_f1"], *sysd[k]["strict_f1_ci"], OLD if k == "ala_bert" else NEUTRAL)
-            for k, lab in LADDER_ROWS if k in sysd]
+    rows = []   # label, argmax, rule, lo, hi, colour, marker
+    for k, lab in LADDER_ROWS:
+        if k in sysd:
+            s = sysd[k]
+            rows.append((lab, s["pooled"]["strict_f1"], s["rule"]["strict_f1"], *s["rule"]["strict_f1_ci"],
+                         OLD if k == "ala_bert" else NEUTRAL, "o"))
     if F:
-        rows.append((f"Ensemble of {len(F['members'])} backbones", F["ensemble_argmax"]["strict_f1"],
-                     *F["ensemble_argmax"]["strict_f1_ci"], NEW))
-        rows.append(("Ensemble + tuned decision rule", F["ensemble_crossfit_offsets"]["strict_f1"],
-                     *F["ensemble_crossfit_offsets"]["strict_f1_ci"], NEW))
+        e = F["ensemble_crossfit_offsets"]
+        rows.append((f"Ensemble of the {len(F['members'])} backbones", F["ensemble_argmax"]["strict_f1"], e["strict_f1"],
+                     *e["strict_f1_ci"], NEW, "o"))
+        if "exploratory" in F:
+            x = F["exploratory"]["stacked"]
+            rows.append(("+ compare with the other replies\n(exploratory)", None, x["strict_f1"], *x["strict_f1_ci"], NEW, "D"))
     if not rows:
         return
-    fig, ax = plt.subplots(figsize=(TEXT, 0.42 * len(rows) + 1.0))
+    fig, ax = plt.subplots(figsize=(TEXT, 0.44 * len(rows) + 1.25))
     hbar_axes(ax)
     tf = S["baselines"]["tfidf_response_grouped"]["strict_f1"]
     ax.axvline(tf, color=FAINT, lw=0.9, ls=(0, (3, 3)), zorder=0)
-    say(ax, (tf, len(rows) - 0.4), "TF-IDF + logistic\nregression, reply only", color=DIM, dx=-4, ha="right", va="bottom", size=8.2)
-    for i, (label, v, lo, hi, col) in enumerate(rows):
+    say(ax, (tf, -0.75), "TF-IDF + logistic regression on the reply", color=DIM, dx=5, ha="left", va="center", size=8.2)
+    for i, (label, am, rule, lo, hi, col, mk) in enumerate(rows):
         y = len(rows) - 1 - i
-        ax.plot([lo, hi], [y, y], color=col, lw=1.6, solid_capstyle="butt")
-        ax.plot(v, y, "o", ms=7, color=col, zorder=3)
-        say(ax, (hi, y), f"{v:.3f}", color=INK, dx=8, size=8.8)
+        ax.plot([lo, hi], [y, y], color=col, lw=1.6, solid_capstyle="butt", zorder=2)
+        if am is not None:
+            ax.plot(am, y, marker="o", ms=6.5, mfc=BG, mec=col, mew=1.4, ls="none", zorder=3)
+        ax.plot(rule, y, marker=mk, ms=7.5 if mk == "o" else 7, color=col, ls="none", zorder=4)
+        say(ax, (hi, y), f"{rule:.3f}", color=INK, dx=8, size=8.8)
     ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.8)
-    ax.set_xlim(0.45, 0.8)
-    ax.set_ylim(-0.6, len(rows) - 0.1)
-    ax.set_xlabel("Macro-F1 (strict), conversation-grouped 5-fold cross-validation, with 95% interval")
+    ax.set_xlim(0.5, 0.75)
+    ax.set_ylim(-1.1, len(rows) - 0.4)
+    ax.set_xlabel("Macro-F1 (strict), conversation-grouped 5-fold cross-validation")
+    h = [plt.Line2D([], [], marker="o", ls="none", mfc=BG, mec=DIM, mew=1.4, ms=6.5),
+         plt.Line2D([], [], marker="o", ls="-", color=DIM, ms=7.5, lw=1.6)]
+    ax.legend(h, ["Most probable class", "With the tuned decision rule, 95% interval"], loc="lower left",
+              bbox_to_anchor=(0, 1.0), ncol=2)
     save(fig, "ladder.png")
 
 
