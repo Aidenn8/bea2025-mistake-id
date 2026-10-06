@@ -133,8 +133,15 @@ def ala_section(y, groups, official):
 
 
 # ------------------------------------------------------------------ ladder and backbones
+def ranking(probs, y) -> dict:
+    """One-vs-rest AUC per class: how well the probabilities order replies, whatever the threshold."""
+    from sklearn.metrics import roc_auc_score
+    return {LABELS[c]: float(roc_auc_score(y == c, probs[:, c])) for c in range(3)}
+
+
 def system_entry(run, y, groups, ref_pred=None):
     ev = evaluate(run, y)
+    ev["auc"] = ranking(run["oof"], y)
     pred = run["oof"].argmax(-1)
     ci = bootstrap(y, {"m": pred}, groups, n_boot=N_BOOT)["m"]
     ev["strict_f1_ci"] = [ci["lo"], ci["hi"]]
@@ -172,7 +179,7 @@ def final_section(y, groups, dev):
     fold = runs[members[0]]["fold"]
     assert all(np.array_equal(runs[m]["fold"], fold) for m in members)
     oof = average([runs[m]["oof"] for m in members])
-    out = {"members": members}
+    out = {"members": members, "auc": ranking(oof, y)}
     plain = oof.argmax(-1)
     out["ensemble_argmax"] = scores(y, plain)
     crossfit_pred, chosen = crossfit_offsets(oof, y, fold)
@@ -278,7 +285,8 @@ def main():
     print(json.dumps(round_floats({k: summary[k] for k in ("ala",)}), indent=1)[:3000])
     for name, s in summary["systems"].items():
         print(f"{name:18s} strict F1 {s['pooled']['strict_f1']:.4f}  CI {s['strict_f1_ci'][0]:.3f}-{s['strict_f1_ci'][1]:.3f}"
-              f"  acc {s['pooled']['strict_acc']:.4f}  lenient F1 {s['pooled']['lenient_f1']:.4f}")
+              f"  acc {s['pooled']['strict_acc']:.4f}  lenient F1 {s['pooled']['lenient_f1']:.4f}"
+              f"  AUC " + " ".join(f"{k[:4]} {v:.3f}" for k, v in s["auc"].items()))
     if final:
         print("final", json.dumps(round_floats({k: final[k] for k in ("members", "ensemble_argmax", "ensemble_crossfit_offsets")}))[:1500])
 
