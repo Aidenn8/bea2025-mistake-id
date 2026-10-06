@@ -9,6 +9,9 @@ bert_pair_opt_mt grouped
 # Other backbones with the full recipe (ensemble members).
 roberta_mt grouped
 mpnet_mt grouped
+# Seed sensitivity of the old recipe on its original split.
+ala_bert_seed1 notebook
+ala_bert_seed2 notebook
 # How much a response-level split flatters the old system.
 ala_bert leaky
 modernbert_mt grouped

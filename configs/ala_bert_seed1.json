@@ -1,0 +1,1 @@
+{"name": "ala_bert_seed1", "model": "bert-base-uncased", "input_format": "notebook", "lr": 1e-05, "epochs": 4, "batch_size": 16, "micro_batch": 2, "warmup_ratio": 0.0, "weight_decay": 0.01, "seed": 1, "precision": "fp32", "notes": "Replica of the submitted ALA system: bert-base-uncased, history then response cut at 512, Trainer defaults, 4 epochs, last checkpoint."}
