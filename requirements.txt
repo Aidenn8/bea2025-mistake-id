@@ -1,0 +1,17 @@
+# Versions used for every result in this repository (Python 3.12, macOS 14, Apple M2).
+torch==2.14.1
+transformers==5.18.0
+tokenizers==0.23.2
+huggingface-hub==1.33.0
+safetensors==0.8.0
+sentencepiece==0.2.2
+protobuf==7.36.2
+numpy==2.5.3
+scipy==1.18.1
+scikit-learn==1.9.1
+matplotlib==3.11.2
+pytest==9.1.1
+# Only needed to check that the original notebook's train/validation split is replayed exactly
+# (tests/test_core.py skips that check without it).
+datasets==3.5.0
+pyarrow==18.1.0
