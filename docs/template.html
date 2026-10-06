@@ -117,7 +117,17 @@
         <figcaption><b>Official Track 1 leaderboard</b>, each team's best submission
           <a class="cite" href="#ref-1">[1]</a>.</figcaption>
       </figure>
-      <!--ALA-REPRO-->
+      <h3>Reproducing it</h3>
+      <p>I re-implemented the notebook's training exactly (same tokenizer, input string, optimiser,
+        schedule, batch size, epochs and the same 496 validation replies, replayed index for index from
+        its random split) and retrained it on a laptop GPU. Training loss averaged 0.508 over the run
+        against the notebook's 0.527, but the validation score was not reproduced: macro-F1
+        {{ala.notebook_split.strict_f1|3}}, not 0.643. The reason is the rarest class. The retrained model
+        predicted &ldquo;To some extent&rdquo; for {{ala.notebook_split.pred_counts.1|int}} of 496 validation
+        replies and {{ala.notebook_split.test_pred_counts.1|int}} of 1,547 test replies, so its F1 on that class, a third of the score,
+        was zero. Two more retrainings with different random seeds scored {{ala.notebook_split_seed1.strict_f1|3}}
+        and {{ala.notebook_split_seed2.strict_f1|3}}. The recipe barely learns the class, and whether it predicts it at
+        all is close to a coin toss; the submitted model happened to land on the better side.</p>
     </div>
   </section>
 
@@ -163,7 +173,30 @@
         <li>The tokenizer was reloaded from <code>distilbert-base-uncased</code> for the BERT model. I checked
           this one: the two tokenizers produce identical ids, so it did no harm.</li>
       </ul>
-      <!--AUDIT-BASELINE-->
+
+      <h3>5. A much simpler model was almost as good</h3>
+      <p>The team never compared BERT with a simple baseline. A bag-of-words model, TF-IDF features of the
+        reply alone fed to a logistic regression, takes seconds to train. Under the honest evaluation below
+        it scores macro-F1 {{baselines.tfidf_response_grouped.strict_f1|3}}, against {{ala.cv_grouped.pooled.strict_f1|3}}
+        for the submitted recipe. Most of what the fine-tuned transformer knew could be read off the reply's
+        words.</p>
+      <div class="tbl">
+        <p class="tcap"><b>Cheap reference points</b> <span>Macro-F1, development set, 5-fold cross-validation</span></p>
+        <div class="tscroll"><table class="bt res">
+          <thead><tr><th>Model</th><th class="n">Folds by conversation</th><th class="n">Folds by reply (leaky)</th></tr></thead>
+          <tbody>
+            <tr><td>Always &ldquo;Yes&rdquo;</td><td class="n">{{baselines.majority.strict_f1|3}}</td><td class="n dim">&ndash;</td></tr>
+            <tr><td>Each tutor's most common label</td><td class="n">{{baselines.tutor_identity.strict_f1|3}}</td><td class="n dim">&ndash;</td></tr>
+            <tr><td>TF-IDF + logistic regression, history only</td><td class="n">{{baselines.tfidf_history_grouped.strict_f1|3}}</td><td class="n">{{baselines.tfidf_history_leaky.strict_f1|3}}</td></tr>
+            <tr><td>TF-IDF + logistic regression, reply only</td><td class="n">{{baselines.tfidf_response_grouped.strict_f1|3}}</td><td class="n">{{baselines.tfidf_response_leaky.strict_f1|3}}</td></tr>
+            <tr><td>TF-IDF + logistic regression, both</td><td class="n">{{baselines.tfidf_both_grouped.strict_f1|3}}</td><td class="n">{{baselines.tfidf_both_leaky.strict_f1|3}}</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <p>The table also shows how the leak works. A model that sees only the history cannot tell one
+        tutor's reply from another's, and it gains nothing from the leaky split. Models that read the reply
+        gain about three points, because replies to the same dialogue share its numbers and wording, and
+        some are duplicated outright.</p>
     </div>
   </section>
 
@@ -186,7 +219,18 @@
         <li><b>The test set is used once.</b> All design decisions were made on cross-validation. The final
           system's test predictions were scored once on the organisers' post-competition submission server.</li>
       </ul>
-      <!--PROTOCOL-CALIBRATION-->
+      <figure>
+        <div class="fscroll"><img src="images/protocol.png" alt="Dot plot of the submitted recipe's macro-F1 under each way of measuring it: reported validation 0.643, three retrainings on the same split, reply-level cross-validation, conversation-level cross-validation and the official test score of 0.636."></div>
+        <figcaption><b>One recipe, many scores.</b> Hollow: the number the 2025 notebook printed. Dots: the same
+          code retrained here. Bars are 95% intervals from the conversation bootstrap. Diamond: the official test
+          score of the submitted model.</figcaption>
+      </figure>
+      <p>Run through the protocol, the submitted recipe scores {{ala.cv_grouped.pooled.strict_f1|3}}
+        ({{ala.cv_grouped.strict_f1_ci.0|3}}&ndash;{{ala.cv_grouped.strict_f1_ci.1|3}}), well below both its printed
+        validation score and its test score. That is consistent with the reproduction above: the recipe's typical
+        model predicts &ldquo;To some extent&rdquo; almost never (17 times in 2,476 replies here), and the submitted
+        model was a fortunate exception. Comparing new systems against this recipe through the same protocol is
+        the fair comparison; comparing them with 0.636 would credit the old system with its luck.</p>
     </div>
   </section>
 
