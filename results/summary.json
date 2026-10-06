@@ -1,0 +1,201 @@
+{
+ "data": {
+  "n_dev": 2476,
+  "n_test": 1547,
+  "n_dev_conversations": 300,
+  "n_dev_histories": 287,
+  "n_test_conversations": 191,
+  "dev_label_counts": {
+   "Yes": 1932,
+   "To some extent": 174,
+   "No": 370
+  },
+  "test_label_counts_derived": {
+   "Yes": 1139,
+   "To some extent": 138,
+   "No": 270
+  },
+  "dev_by_tutor": {
+   "Sonnet": {
+    "Yes": 257,
+    "To some extent": 20,
+    "No": 23
+   },
+   "Llama318B": {
+    "Yes": 243,
+    "To some extent": 21,
+    "No": 36
+   },
+   "Llama31405B": {
+    "Yes": 285,
+    "To some extent": 6,
+    "No": 9
+   },
+   "GPT4": {
+    "Yes": 282,
+    "To some extent": 2,
+    "No": 16
+   },
+   "Mistral": {
+    "Yes": 270,
+    "To some extent": 18,
+    "No": 12
+   },
+   "Expert": {
+    "Yes": 225,
+    "To some extent": 57,
+    "No": 18
+   },
+   "Gemini": {
+    "Yes": 257,
+    "To some extent": 14,
+    "No": 29
+   },
+   "Phi3": {
+    "Yes": 79,
+    "To some extent": 7,
+    "No": 214
+   },
+   "Novice": {
+    "Yes": 34,
+    "To some extent": 29,
+    "No": 13
+   }
+  },
+  "dev_sources": {
+   "MathDial": 224,
+   "Bridge": 76
+  },
+  "dev_tokens": {
+   "median": 335.0,
+   "p90": 452.5,
+   "max": 1391,
+   "over_512": 94,
+   "response_lost": 8
+  },
+  "dev_cut_mask_count": 94,
+  "test_tokens": {
+   "median": 391.0,
+   "p90": 520.0,
+   "max": 1300,
+   "over_512": 186,
+   "response_lost": 40
+  },
+  "test_cut_mask_count": 186,
+  "test_pair_history_cut": 199
+ },
+ "baselines": {
+  "majority": {
+   "strict_f1": 0.2922,
+   "strict_acc": 0.78029,
+   "lenient_f1": 0.45962,
+   "lenient_acc": 0.85057,
+   "f1_Yes": 0.87659,
+   "f1_To some extent": 0.0,
+   "f1_No": 0.0
+  },
+  "tutor_identity": {
+   "strict_f1": 0.51365,
+   "strict_acc": 0.83481,
+   "lenient_f1": 0.79115,
+   "lenient_acc": 0.90226,
+   "f1_Yes": 0.90214,
+   "f1_To some extent": 0.0,
+   "f1_No": 0.63881
+  },
+  "tfidf_response_grouped": {
+   "strict_f1": 0.62424,
+   "strict_acc": 0.83885,
+   "lenient_f1": 0.83025,
+   "lenient_acc": 0.9168,
+   "f1_Yes": 0.90891,
+   "f1_To some extent": 0.25478,
+   "f1_No": 0.70904,
+   "strict_f1_ci": [
+    0.59231,
+    0.65589
+   ]
+  },
+  "tfidf_response_leaky": {
+   "strict_f1": 0.65481,
+   "strict_acc": 0.85339,
+   "lenient_f1": 0.84997,
+   "lenient_acc": 0.9269,
+   "f1_Yes": 0.91849,
+   "f1_To some extent": 0.30341,
+   "f1_No": 0.74253,
+   "strict_f1_ci": [
+    0.62217,
+    0.68783
+   ]
+  },
+  "tfidf_history_grouped": {
+   "strict_f1": 0.32549,
+   "strict_acc": 0.47254,
+   "lenient_f1": 0.51001,
+   "lenient_acc": 0.61793,
+   "f1_Yes": 0.61903,
+   "f1_To some extent": 0.07737,
+   "f1_No": 0.28006,
+   "strict_f1_ci": [
+    0.30232,
+    0.34529
+   ]
+  },
+  "tfidf_history_leaky": {
+   "strict_f1": 0.28945,
+   "strict_acc": 0.36793,
+   "lenient_f1": 0.48796,
+   "lenient_acc": 0.62803,
+   "f1_Yes": 0.50211,
+   "f1_To some extent": 0.14608,
+   "f1_No": 0.22015,
+   "strict_f1_ci": [
+    0.26264,
+    0.31549
+   ]
+  },
+  "tfidf_both_grouped": {
+   "strict_f1": 0.61397,
+   "strict_acc": 0.84087,
+   "lenient_f1": 0.82781,
+   "lenient_acc": 0.9168,
+   "f1_Yes": 0.9095,
+   "f1_To some extent": 0.22837,
+   "f1_No": 0.70402,
+   "strict_f1_ci": [
+    0.58482,
+    0.64462
+   ]
+  },
+  "tfidf_both_leaky": {
+   "strict_f1": 0.64509,
+   "strict_acc": 0.84249,
+   "lenient_f1": 0.84141,
+   "lenient_acc": 0.92246,
+   "f1_Yes": 0.91156,
+   "f1_To some extent": 0.29565,
+   "f1_No": 0.72805,
+   "strict_f1_ci": [
+    0.61566,
+    0.67409
+   ]
+  }
+ },
+ "ala": {
+  "official_test": {
+   "strict_f1": 0.6361,
+   "strict_acc": 0.8423,
+   "lenient_f1": 0.8493,
+   "lenient_acc": 0.914,
+   "rank": 28,
+   "teams": 44
+  }
+ },
+ "systems": {},
+ "final": null,
+ "slices": {},
+ "test": {
+  "n_cut_rows": 186
+ }
+}

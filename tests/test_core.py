@@ -68,6 +68,16 @@ def test_metrics_hand_example():
     assert LABELS == ["Yes", "To some extent", "No"]
 
 
+def test_fast_metric_matches_sklearn():
+    from mistake_id.metrics import fast_metric
+    rng = np.random.default_rng(1)
+    for _ in range(20):
+        y, p = rng.integers(0, 3, 300), rng.integers(0, 3, 300)
+        s = scores(y, p)
+        for m in ("strict_f1", "strict_acc", "lenient_f1", "lenient_acc"):
+            assert fast_metric(y, p, m) == pytest.approx(s[m], abs=1e-12)
+
+
 @pytest.mark.parametrize("model", ["bert-base-uncased", "microsoft/deberta-v3-base", "roberta-base"])
 def test_pair_encoder_keeps_response_and_latest_turn(dev, test, model):
     from transformers import AutoTokenizer

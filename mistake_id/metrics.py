@@ -31,6 +31,20 @@ def confusion(y_true, y_pred) -> np.ndarray:
     return confusion_matrix(y_true, y_pred, labels=[0, 1, 2])
 
 
+def fast_metric(y_true: np.ndarray, y_pred: np.ndarray, metric: str) -> float:
+    """The four headline metrics from a confusion matrix (same values as ``scores``)."""
+    if metric.startswith("lenient"):
+        y_true, y_pred, k = LENIENT[y_true], LENIENT[y_pred], 2
+    else:
+        k = 3
+    cm = np.bincount(k * y_true + y_pred, minlength=k * k).reshape(k, k)
+    if metric.endswith("acc"):
+        return float(np.trace(cm) / cm.sum())
+    tp = np.diag(cm)
+    denom = cm.sum(0) + cm.sum(1)
+    return float(np.mean(np.where(denom > 0, 2 * tp / np.maximum(denom, 1), 0.0)))
+
+
 def _group_index(groups):
     groups = np.asarray(groups)
     uniq, inv = np.unique(groups, return_inverse=True)
@@ -46,6 +60,7 @@ def bootstrap(y_true, preds: dict, groups, metric="strict_f1", n_boot=2000, seed
     the same conversation are never treated as independent.
     """
     y_true = np.asarray(y_true)
+    preds = {name: np.asarray(p) for name, p in preds.items()}
     members = _group_index(groups)
     rng = np.random.default_rng(seed)
     draws = {name: [] for name in preds}
@@ -53,7 +68,7 @@ def bootstrap(y_true, preds: dict, groups, metric="strict_f1", n_boot=2000, seed
         pick = rng.integers(0, len(members), len(members))
         idx = np.concatenate([members[g] for g in pick])
         for name, p in preds.items():
-            draws[name].append(scores(y_true[idx], np.asarray(p)[idx])[metric])
+            draws[name].append(fast_metric(y_true[idx], p[idx], metric))
     out = {}
     for name, p in preds.items():
         d = np.array(draws[name])
