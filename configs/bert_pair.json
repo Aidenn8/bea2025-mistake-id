@@ -1,0 +1,16 @@
+{
+ "name": "bert_pair",
+ "model": "bert-base-uncased",
+ "input_format": "pair",
+ "head_tokens": 96,
+ "lr": 1e-05,
+ "epochs": 4,
+ "batch_size": 16,
+ "micro_batch": 2,
+ "warmup_ratio": 0.0,
+ "weight_decay": 0.01,
+ "group_by_length": true,
+ "seed": 42,
+ "precision": "fp32",
+ "notes": "ALA plus the input fix only: response first, history cut to problem statement + latest turns."
+}

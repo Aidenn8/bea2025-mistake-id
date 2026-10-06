@@ -35,10 +35,16 @@ def _keep_ends(text: str, offsets, head: int, tail: int) -> str:
     return text[:head_end].rstrip() + ELLIPSIS + text[tail_start:].lstrip()
 
 
+PROMPT_HEAD = "Conversation between a math tutor and a student:\n"
+PROMPT_MID = "\n\nThe tutor's next response:\n"
+PROMPT_TAIL = ("\n\nDoes the tutor's response identify the mistake in the student's last message? "
+               "Answer Yes, To some extent, or No.")
+
+
 class Encoder:
     def __init__(self, tok, fmt: str, max_len: int = 512, head_tokens: int = 96, max_response: int = 256,
                  margin: int = 8):
-        if fmt not in ("notebook", "pair"):
+        if fmt not in ("notebook", "pair", "prompt"):
             raise ValueError(f"unknown input format {fmt!r}")
         self.tok, self.fmt, self.max_len = tok, fmt, max_len
         self.head_tokens, self.max_response, self.margin = head_tokens, max_response, margin
@@ -49,9 +55,12 @@ class Encoder:
         self.stats["n"] += 1
         if self.fmt == "notebook":
             return dict(self.tok(notebook_text(row), truncation=True, max_length=self.max_len))
+        if self.fmt == "prompt":
+            return self._prompt(row)
         return self._pair(row)
 
-    def _pair(self, row: dict) -> dict:
+    def _fit(self, row: dict, reserved: int) -> tuple[str, str]:
+        """Response (capped) and history cut to fit ``max_len - reserved`` tokens together."""
         tok = self.tok
         response = row["response"]
         r = tok(response, add_special_tokens=False, return_offsets_mapping=True)
@@ -61,12 +70,32 @@ class Encoder:
         n_resp = len(tok(response, add_special_tokens=False)["input_ids"])
 
         history = row["history"]
-        budget = self.max_len - self.n_special - n_resp - self.margin
+        budget = self.max_len - reserved - n_resp - self.margin
         h = tok(history, add_special_tokens=False, return_offsets_mapping=True)
         if len(h["input_ids"]) > budget:
             head = min(self.head_tokens, budget // 3)
             history = _keep_ends(history, h["offset_mapping"], head, budget - head)
             self.stats["history_cut"] += 1
+        return response, history
+
+    def _prompt(self, row: dict) -> dict:
+        tok = self.tok
+        template = len(tok(PROMPT_HEAD + PROMPT_MID + PROMPT_TAIL)["input_ids"])
+        response, history = self._fit(row, template)
+        text = PROMPT_HEAD + history + PROMPT_MID + response + PROMPT_TAIL
+        side = tok.truncation_side
+        tok.truncation_side = "left"
+        try:
+            enc = tok(text, truncation=True, max_length=self.max_len)
+        finally:
+            tok.truncation_side = side
+        if len(tok(text)["input_ids"]) > self.max_len:
+            self.stats["guard_trimmed"] += 1
+        return dict(enc)
+
+    def _pair(self, row: dict) -> dict:
+        tok = self.tok
+        response, history = self._fit(row, self.n_special)
 
         # Re-tokenising the cut text can shift a token or two at the seams; trim any
         # overflow from the start of the history (never from the response).

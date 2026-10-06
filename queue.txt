@@ -1,0 +1,14 @@
+# Experiment queue (CONFIG SPLIT [FOLD_SEED]); run with scripts/queue.sh.
+# The old system (ALA) on its original split, then under grouped cross-validation.
+ala_bert notebook
+ala_bert grouped
+# Ablation ladder on bert-base: each step adds one change.
+bert_pair grouped
+bert_pair_opt grouped
+bert_pair_opt_mt grouped
+# Other backbones with the full recipe (ensemble members).
+roberta_mt grouped
+mpnet_mt grouped
+# How much a response-level split flatters the old system.
+ala_bert leaky
+modernbert_mt grouped

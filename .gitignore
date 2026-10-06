@@ -9,3 +9,4 @@ tools/thermal/thermal.log
 tools/thermal/pgids/
 tools/thermal/thermalstate
 logs/
+results/smoke/

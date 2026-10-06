@@ -44,6 +44,7 @@ class Config:
     max_grad_norm: float = 1.0
     class_weights: list | None = None
     aux_weight: float = 0.0
+    group_by_length: bool = False
     seed: int = 42
     precision: str = "fp32"
     notes: str = ""
@@ -78,6 +79,24 @@ def _param_groups(model, weight_decay):
     return [{"params": decay, "weight_decay": weight_decay}, {"params": no_decay, "weight_decay": 0.0}]
 
 
+def length_grouped_order(lengths, batch_size, gen, mega=50):
+    """Random order in which each batch holds inputs of similar length.
+
+    Same idea as Hugging Face's ``group_by_length``: shuffle, cut into mega-batches of
+    ``mega * batch_size``, sort each mega-batch by length, cut into batches, shuffle the
+    batches. Less padding, so each step is cheaper; every example is still seen once
+    per epoch.
+    """
+    perm = torch.randperm(len(lengths), generator=gen).tolist()
+    size = mega * batch_size
+    batches = []
+    for m in range(0, len(perm), size):
+        chunk = sorted(perm[m:m + size], key=lambda i: -lengths[i])
+        batches += [chunk[b:b + batch_size] for b in range(0, len(chunk), batch_size)]
+    order = torch.randperm(len(batches), generator=gen).tolist()
+    return [i for b in order for i in batches[b]]
+
+
 def _pad(tok, feats):
     batch = tok.pad(feats, return_tensors="pt")
     return {k: v for k, v in batch.items() if k in ("input_ids", "attention_mask", "token_type_ids")}
@@ -97,9 +116,23 @@ class Run:
         set_seed(cfg.seed)
         self.tok = AutoTokenizer.from_pretrained(cfg.model)
         self.n_heads = len(DIMENSIONS) if cfg.aux_weight > 0 else 1
+        if self.tok.pad_token is None:
+            self.tok.pad_token = self.tok.eos_token
         self.model = AutoModelForSequenceClassification.from_pretrained(cfg.model, num_labels=3 * self.n_heads)
         if self.model.config.pad_token_id is None and self.tok.pad_token_id is not None:
             self.model.config.pad_token_id = self.tok.pad_token_id
+        lora = cfg.extra.get("lora")
+        if lora:
+            # Decoder LLMs: freeze the network, train low-rank adapters on every linear
+            # layer plus the new classification head.
+            from peft import LoraConfig, get_peft_model
+            self.model = get_peft_model(self.model, LoraConfig(
+                task_type="SEQ_CLS", r=lora.get("r", 16), lora_alpha=lora.get("alpha", 32),
+                lora_dropout=lora.get("dropout", 0.05), target_modules="all-linear"))
+        if cfg.extra.get("grad_checkpointing"):
+            self.model.gradient_checkpointing_enable()
+            if lora:
+                self.model.enable_input_require_grads()
         self.model.to(self.dev)
         self.encoder = Encoder(self.tok, cfg.input_format, cfg.max_len, cfg.head_tokens)
         self.history = []
@@ -133,7 +166,10 @@ class Run:
         step = 0
         for epoch in range(cfg.epochs):
             model.train()
-            order = torch.randperm(len(rows), generator=gen).tolist()
+            if cfg.group_by_length:
+                order = length_grouped_order([len(f["input_ids"]) for f in feats], cfg.batch_size, gen)
+            else:
+                order = torch.randperm(len(rows), generator=gen).tolist()
             run_loss, n_seen = torch.zeros((), device=dev), 0
             for b in range(0, len(order), cfg.batch_size):
                 batch = order[b:b + cfg.batch_size]

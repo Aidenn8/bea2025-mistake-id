@@ -1,0 +1,17 @@
+{
+ "name": "bert_pair_opt",
+ "model": "bert-base-uncased",
+ "input_format": "pair",
+ "head_tokens": 96,
+ "lr": 2e-05,
+ "epochs": 4,
+ "batch_size": 16,
+ "micro_batch": 2,
+ "warmup_ratio": 0.1,
+ "weight_decay": 0.01,
+ "class_weights": [0.7375, 2.4575, 1.6853],
+ "group_by_length": true,
+ "seed": 42,
+ "precision": "fp32",
+ "notes": "+ learning rate 2e-5 with 10% warm-up and square-root inverse-frequency class weights."
+}

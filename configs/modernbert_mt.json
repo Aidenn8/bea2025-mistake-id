@@ -1,0 +1,18 @@
+{
+ "name": "modernbert_mt",
+ "model": "answerdotai/ModernBERT-base",
+ "input_format": "pair",
+ "head_tokens": 96,
+ "lr": 2e-05,
+ "epochs": 4,
+ "batch_size": 16,
+ "micro_batch": 2,
+ "warmup_ratio": 0.1,
+ "weight_decay": 0.01,
+ "class_weights": [0.7375, 2.4575, 1.6853],
+ "aux_weight": 0.5,
+ "group_by_length": true,
+ "seed": 42,
+ "precision": "fp32",
+ "notes": "Full recipe on ModernBERT-base."
+}
