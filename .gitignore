@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+data/
+.pytest_cache/
+.DS_Store
+tools/thermal/state
+tools/thermal/thermal.log
+tools/thermal/pgids/
+tools/thermal/thermalstate
+logs/
