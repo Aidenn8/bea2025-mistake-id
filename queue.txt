@@ -2,16 +2,16 @@
 # The old system (ALA) on its original split, then under grouped cross-validation.
 ala_bert notebook
 ala_bert grouped
-# Ablation ladder on bert-base: each step adds one change.
-bert_pair grouped
-bert_pair_opt grouped
+# The new system: the full recipe (fixed in advance) on four backbones; these are the ensemble.
 bert_pair_opt_mt grouped
-# Other backbones with the full recipe (ensemble members).
 roberta_mt grouped
 mpnet_mt grouped
+modernbert_mt grouped
+# Ablation ladder on BERT: what each change contributes.
+bert_pair grouped
+bert_pair_opt grouped
 # Seed sensitivity of the old recipe on its original split.
 ala_bert_seed1 notebook
 ala_bert_seed2 notebook
 # How much a response-level split flatters the old system.
 ala_bert leaky
-modernbert_mt grouped
