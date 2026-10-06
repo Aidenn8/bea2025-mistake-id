@@ -1,0 +1,81 @@
+{
+ "config": {
+  "name": "roberta_mt",
+  "model": "roberta-base",
+  "input_format": "pair",
+  "max_len": 512,
+  "head_tokens": 96,
+  "lr": 2e-05,
+  "epochs": 4,
+  "batch_size": 16,
+  "micro_batch": 2,
+  "warmup_ratio": 0.1,
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "class_weights": [
+   0.7375,
+   2.4575,
+   1.6853
+  ],
+  "aux_weight": 0.5,
+  "group_by_length": true,
+  "seed": 42,
+  "precision": "fp32",
+  "notes": "Full recipe on RoBERTa-base.",
+  "extra": {}
+ },
+ "split": "grouped",
+ "fold_seed": 0,
+ "fold": 0,
+ "n_train": 1969,
+ "n_val": 507,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 1.4532834620206958,
+   "elapsed_s": 414.9176959991455
+  },
+  {
+   "epoch": 2,
+   "train_loss": 1.2694923164518792,
+   "elapsed_s": 806.4540410041809
+  },
+  {
+   "epoch": 3,
+   "train_loss": 1.078661018243715,
+   "elapsed_s": 1201.1306211948395
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.9061859580331069,
+   "elapsed_s": 1609.5942509174347
+  }
+ ],
+ "train_seconds": 1609.596853017807,
+ "total_seconds": 1706.793713092804,
+ "encoder_stats_train": {
+  "history_cut": 105,
+  "response_cut": 14,
+  "guard_trimmed": 0,
+  "n": 1969
+ },
+ "device": "mps",
+ "versions": {
+  "python": "3.12.15",
+  "torch": "2.14.1",
+  "transformers": "5.18.0",
+  "sklearn": "1.9.1",
+  "machine": "arm64",
+  "system": "macOS-14.4-arm64-arm-64bit"
+ },
+ "finished": "2026-10-06T13:07:44+00:00",
+ "val_scores": {
+  "strict_f1": 0.6371828092087567,
+  "strict_acc": 0.8441814595660749,
+  "lenient_f1": 0.8406293428628151,
+  "lenient_acc": 0.9250493096646942,
+  "f1_Yes": 0.9099876695437731,
+  "f1_To some extent": 0.27692307692307694,
+  "f1_No": 0.7246376811594203
+ }
+}

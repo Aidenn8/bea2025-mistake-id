@@ -1,0 +1,81 @@
+{
+ "config": {
+  "name": "mpnet_mt",
+  "model": "sentence-transformers/all-mpnet-base-v2",
+  "input_format": "pair",
+  "max_len": 512,
+  "head_tokens": 96,
+  "lr": 2e-05,
+  "epochs": 4,
+  "batch_size": 16,
+  "micro_batch": 2,
+  "warmup_ratio": 0.1,
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "class_weights": [
+   0.7375,
+   2.4575,
+   1.6853
+  ],
+  "aux_weight": 0.5,
+  "group_by_length": true,
+  "seed": 42,
+  "precision": "fp32",
+  "notes": "Full recipe on MPNet (all-mpnet-base-v2, the backbone of the 5th-placed team BD).",
+  "extra": {}
+ },
+ "split": "grouped",
+ "fold_seed": 0,
+ "fold": 4,
+ "n_train": 1989,
+ "n_val": 487,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 1.3977017639988687,
+   "elapsed_s": 572.0057499408722
+  },
+  {
+   "epoch": 2,
+   "train_loss": 1.1254793208349045,
+   "elapsed_s": 1179.4097118377686
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.9862081413595085,
+   "elapsed_s": 1772.4313070774078
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.898655004870538,
+   "elapsed_s": 2376.4378490448
+  }
+ ],
+ "train_seconds": 2376.4412059783936,
+ "total_seconds": 2523.52800488472,
+ "encoder_stats_train": {
+  "history_cut": 72,
+  "response_cut": 13,
+  "guard_trimmed": 0,
+  "n": 1989
+ },
+ "device": "mps",
+ "versions": {
+  "python": "3.12.15",
+  "torch": "2.14.1",
+  "transformers": "5.18.0",
+  "sklearn": "1.9.1",
+  "machine": "arm64",
+  "system": "macOS-14.4-arm64-arm-64bit"
+ },
+ "finished": "2026-10-06T18:02:42+00:00",
+ "val_scores": {
+  "strict_f1": 0.6122898584721245,
+  "strict_acc": 0.8706365503080082,
+  "lenient_f1": 0.866303398361133,
+  "lenient_acc": 0.9322381930184805,
+  "f1_Yes": 0.9311224489795918,
+  "f1_To some extent": 0.13333333333333333,
+  "f1_No": 0.7724137931034483
+ }
+}

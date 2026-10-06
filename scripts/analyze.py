@@ -134,9 +134,13 @@ def ala_section(y, groups, official):
 
 # ------------------------------------------------------------------ ladder and backbones
 def ranking(probs, y) -> dict:
-    """One-vs-rest AUC per class: how well the probabilities order replies, whatever the threshold."""
-    from sklearn.metrics import roc_auc_score
-    return {LABELS[c]: float(roc_auc_score(y == c, probs[:, c])) for c in range(3)}
+    """Threshold-free quality of the probabilities: one-vs-rest AUC and average precision per
+    class, and the log-loss of the three-way distribution."""
+    from sklearn.metrics import average_precision_score, log_loss, roc_auc_score
+    out = {LABELS[c]: float(roc_auc_score(y == c, probs[:, c])) for c in range(3)}
+    out["ap"] = {LABELS[c]: float(average_precision_score(y == c, probs[:, c])) for c in range(3)}
+    out["log_loss"] = float(log_loss(y, probs / probs.sum(1, keepdims=True)))
+    return out
 
 
 def system_entry(run, y, groups, ref_pred=None):
@@ -286,7 +290,7 @@ def main():
     for name, s in summary["systems"].items():
         print(f"{name:18s} strict F1 {s['pooled']['strict_f1']:.4f}  CI {s['strict_f1_ci'][0]:.3f}-{s['strict_f1_ci'][1]:.3f}"
               f"  acc {s['pooled']['strict_acc']:.4f}  lenient F1 {s['pooled']['lenient_f1']:.4f}"
-              f"  AUC " + " ".join(f"{k[:4]} {v:.3f}" for k, v in s["auc"].items()))
+              f"  AUC " + " ".join(f"{k[:4]} {s['auc'][k]:.3f}" for k in LABELS) + f"  log-loss {s['auc']['log_loss']:.4f}")
     if final:
         print("final", json.dumps(round_floats({k: final[k] for k in ("members", "ensemble_argmax", "ensemble_crossfit_offsets")}))[:1500])
 

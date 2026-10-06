@@ -1,0 +1,81 @@
+{
+ "config": {
+  "name": "bert_pair_opt_mt",
+  "model": "bert-base-uncased",
+  "input_format": "pair",
+  "max_len": 512,
+  "head_tokens": 96,
+  "lr": 2e-05,
+  "epochs": 4,
+  "batch_size": 16,
+  "micro_batch": 2,
+  "warmup_ratio": 0.1,
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "class_weights": [
+   0.7375,
+   2.4575,
+   1.6853
+  ],
+  "aux_weight": 0.5,
+  "group_by_length": true,
+  "seed": 42,
+  "precision": "fp32",
+  "notes": "+ multi-task heads for Mistake Location, Providing Guidance and Actionability (weight 0.5).",
+  "extra": {}
+ },
+ "split": "grouped",
+ "fold_seed": 0,
+ "fold": 1,
+ "n_train": 1990,
+ "n_val": 486,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 1.3735810399654522,
+   "elapsed_s": 416.27333211898804
+  },
+  {
+   "epoch": 2,
+   "train_loss": 1.0621815130339196,
+   "elapsed_s": 806.2881860733032
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.8970389668066897,
+   "elapsed_s": 1193.467808008194
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.7873496510874686,
+   "elapsed_s": 1570.0123550891876
+  }
+ ],
+ "train_seconds": 1570.0154581069946,
+ "total_seconds": 1672.1174540519714,
+ "encoder_stats_train": {
+  "history_cut": 94,
+  "response_cut": 11,
+  "guard_trimmed": 0,
+  "n": 1990
+ },
+ "device": "mps",
+ "versions": {
+  "python": "3.12.15",
+  "torch": "2.14.1",
+  "transformers": "5.18.0",
+  "sklearn": "1.9.1",
+  "machine": "arm64",
+  "system": "macOS-14.4-arm64-arm-64bit"
+ },
+ "finished": "2026-10-06T11:17:51+00:00",
+ "val_scores": {
+  "strict_f1": 0.610056962210053,
+  "strict_acc": 0.8600823045267489,
+  "lenient_f1": 0.8515526896317664,
+  "lenient_acc": 0.9259259259259259,
+  "f1_Yes": 0.926829268292683,
+  "f1_To some extent": 0.1568627450980392,
+  "f1_No": 0.7464788732394366
+ }
+}

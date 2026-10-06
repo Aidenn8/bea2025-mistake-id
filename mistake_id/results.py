@@ -70,17 +70,25 @@ GRID = np.round(np.arange(-2.0, 3.0001, 0.05), 2)
 
 
 def _macro_f1_grid(logp: np.ndarray, y: np.ndarray, grid=GRID) -> np.ndarray:
-    """Strict macro-F1 for every (offset_some, offset_no) pair; shape (len(grid), len(grid))."""
+    """Strict macro-F1 for every (offset_some, offset_no) pair; shape (len(grid), len(grid)).
+
+    For a fixed offset a on "To some extent", a reply is predicted "No" exactly when
+    log p_No + b beats the better of the other two, so all values of b are evaluated
+    at once. Ties go to the lower class index, as with argmax.
+    """
+    grid = np.asarray(grid)
     out = np.empty((len(grid), len(grid)))
+    rows = np.arange(len(grid))[:, None] * 9
     for i, a in enumerate(grid):
-        shifted = logp + np.array([0.0, a, 0.0])
-        for j, b in enumerate(grid):
-            pred = (shifted + np.array([0.0, 0.0, b])).argmax(-1)
-            cm = np.bincount(3 * y + pred, minlength=9).reshape(3, 3)
-            tp = np.diag(cm)
-            denom = cm.sum(0) + cm.sum(1)
-            f1 = np.where(denom > 0, 2 * tp / np.maximum(denom, 1), 0.0)
-            out[i, j] = f1.mean()
+        first_two = logp[:, :2] + np.array([0.0, a])
+        base = first_two.argmax(-1)
+        best = first_two.max(-1)
+        is_no = (logp[:, 2][None, :] + grid[:, None]) > best[None, :]
+        pred = np.where(is_no, 2, base[None, :])
+        cms = np.bincount((rows + 3 * y[None, :] + pred).ravel(), minlength=9 * len(grid)).reshape(len(grid), 3, 3)
+        tp = cms[:, [0, 1, 2], [0, 1, 2]]
+        denom = cms.sum(1) + cms.sum(2)
+        out[i] = np.where(denom > 0, 2 * tp / np.maximum(denom, 1), 0.0).mean(1)
     return out
 
 

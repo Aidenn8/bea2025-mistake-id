@@ -10,3 +10,4 @@ tools/thermal/pgids/
 tools/thermal/thermalstate
 logs/
 results/smoke/
+scratch/
