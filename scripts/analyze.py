@@ -208,7 +208,40 @@ def final_section(y, groups, dev):
         out["leave_one_out"] = {m: scores(y, average([runs[o]["oof"] for o in members if o != m]).argmax(-1))["strict_f1"]
                                 for m in members}
     test = average([runs[m]["test"] for m in members])
-    return out, {"oof": oof, "pred": crossfit_pred, "test": test, "offsets": final_offsets, "fold": fold}
+    arrays = {"oof": oof, "pred": crossfit_pred, "test": test, "offsets": final_offsets, "fold": fold}
+
+    # Exploratory, decided after seeing three members' results: the conversation-aware second
+    # stage (mistake_id/stack.py, C = 1 as written before any result), plus a control that gets
+    # only each reply's own probabilities, to separate sibling information from recalibration.
+    from mistake_id.stack import crossfit_stack, features, fit_stack
+    from sklearn.linear_model import LogisticRegression
+    stacked = crossfit_stack(oof, y, groups, fold, C=1.0)
+    st_pred, st_offsets = crossfit_offsets(stacked, y, fold)
+    control = np.zeros_like(oof)
+    Xc = features(oof, groups)[:, :3]
+    for k in sorted(set(fold.tolist())):
+        tr, te = fold != k, fold == k
+        clf = LogisticRegression(C=1.0, max_iter=2000).fit(Xc[tr], y[tr])
+        control[np.ix_(np.flatnonzero(te), clf.classes_)] = clf.predict_proba(Xc[te])
+    ctl_pred, _ = crossfit_offsets(control, y, fold)
+    ex = {"stacked": scores(y, st_pred), "stacked_auc": ranking(stacked, y),
+          "control_own_only": scores(y, ctl_pred), "control_auc": ranking(control, y),
+          "stacked_vs_ensemble": paired_difference(y, st_pred, crossfit_pred, groups, n_boot=N_BOOT),
+          "siblings_vs_control": paired_difference(y, st_pred, ctl_pred, groups, n_boot=N_BOOT),
+          "stacked_confusion": confusion(y, st_pred).tolist()}
+    ci = bootstrap(y, {"s": st_pred}, groups, n_boot=N_BOOT)["s"]
+    ex["stacked"]["strict_f1_ci"] = [ci["lo"], ci["hi"]]
+    if ala:
+        ex["stacked_vs_ala"] = paired_difference(y, st_pred, ala["oof"].argmax(-1), groups, n_boot=N_BOOT)
+    stacker = fit_stack(oof, y, groups, C=1.0)
+    test_groups = np.array([r["group"] for r in load_rows("test")])
+    test_stacked = np.zeros_like(test)
+    test_stacked[:, stacker.classes_] = stacker.predict_proba(features(test, test_groups))
+    st_final_offsets = tune_offsets(stacked, y)
+    ex["final_offsets"] = st_final_offsets.tolist()
+    out["exploratory"] = ex
+    arrays.update(stacked_pred=st_pred, stacked_test=test_stacked, stacked_offsets=st_final_offsets)
+    return out, arrays
 
 
 # ------------------------------------------------------------------ slices
@@ -244,6 +277,8 @@ def test_section(test, final):
     if final is not None:
         labels["final"] = apply_offsets(final["test"], final["offsets"])
         labels["final_argmax"] = final["test"].argmax(-1)
+        if "stacked_test" in final:
+            labels["final_stacked"] = apply_offsets(final["stacked_test"], final["stacked_offsets"])
     for name, lab in labels.items():
         np.save(pred_dir / f"{name}.npy", lab)
         out[name] = {"counts": {LABELS[k]: int((lab == k).sum()) for k in range(3)},
@@ -276,6 +311,7 @@ def main():
         preds["ala"] = available("ala_bert")["oof"].argmax(-1)
     if final_arrays:
         preds["final"] = final_arrays["pred"]
+        preds["final_stacked"] = final_arrays["stacked_pred"]
     summary["slices"] = slices_section(y, dev, preds)
     summary["test"] = test_section(test, final_arrays)
     # Scores returned by the organisers' submission server (post-shared-task phase), entered by hand
