@@ -25,3 +25,9 @@ def test_build_fills_and_fails_loudly():
         build("{{a.missing|3}}", DATA)
     with pytest.raises(SystemExit):
         build("TBD", DATA)
+
+
+def test_conditional_blocks():
+    page = "<!--IF a.b-->has {{a.b|2}}<!--ELSE-->none<!--ENDIF--> <!--IF a.zz-->x<!--ELSE-->no zz<!--ENDIF-->"
+    assert build(page, DATA) == "has 0.66 no zz"
+    assert build("[<!--IF a.zz-->{{a.zz|3}}<!--ENDIF-->]", DATA) == "[]"   # a dropped block is not evaluated

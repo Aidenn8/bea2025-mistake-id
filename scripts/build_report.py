@@ -10,6 +10,10 @@ dot-separated key path (list indices allowed); ``format`` is one of
     int          integer with thousands commas    signed3     +0.034 / -0.012
     raw          as stored
 
+A block ``<!--IF path-->A<!--ELSE-->B<!--ENDIF-->`` (the ELSE part optional, not nested) keeps A
+when ``path`` resolves in summary.json and B otherwise; the official test score, for instance,
+exists only once it has been entered from the organisers' server.
+
 The build fails if a placeholder does not resolve or if the page still contains "TBD".
 """
 import json
@@ -19,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PLACEHOLDER = re.compile(r"\{\{\s*([^|}]+?)\s*(?:\|\s*([a-z0-9]+)\s*)?\}\}")
+CONDITIONAL = re.compile(r"<!--IF\s+([^>]+?)\s*-->(.*?)(?:<!--ELSE-->(.*?))?<!--ENDIF-->", re.S)
 
 
 def lookup(data, path):
@@ -50,7 +55,17 @@ def fmt(value, spec):
     raise ValueError(f"unknown format {spec!r}")
 
 
+def resolves(data, path) -> bool:
+    try:
+        lookup(data, path)
+        return True
+    except (KeyError, IndexError, ValueError):
+        return False
+
+
 def build(template: str, data: dict) -> str:
+    template = CONDITIONAL.sub(lambda m: m.group(2) if resolves(data, m.group(1)) else (m.group(3) or ""),
+                               template)
     missing = []
 
     def sub(m):

@@ -216,9 +216,17 @@ def final_section(y, groups, dev):
     if ala:
         out["vs_ala"] = paired_difference(y, crossfit_pred, ala["oof"].argmax(-1), groups, n_boot=N_BOOT)
         out["vs_ala_lenient"] = paired_difference(y, crossfit_pred, ala["oof"].argmax(-1), groups, "lenient_f1", N_BOOT)
+        # Like for like: the old recipe given the same cross-fitted decision rule.
+        ala_rule, _ = crossfit_offsets(ala["oof"], y, ala["fold"])
+        out["vs_ala_rule"] = paired_difference(y, crossfit_pred, ala_rule, groups, n_boot=N_BOOT)
     best_single = max(members, key=lambda m: scores(y, runs[m]["oof"].argmax(-1))["strict_f1"])
     out["best_single"] = best_single
     out["vs_best_single"] = paired_difference(y, plain, runs[best_single]["oof"].argmax(-1), groups, n_boot=N_BOOT)
+    # The same question with the decision rule on both sides.
+    single_rule = {m: crossfit_offsets(runs[m]["oof"], y, runs[m]["fold"])[0] for m in members}
+    best_rule = max(members, key=lambda m: scores(y, single_rule[m])["strict_f1"])
+    out["best_single_rule"] = best_rule
+    out["vs_best_single_rule"] = paired_difference(y, crossfit_pred, single_rule[best_rule], groups, n_boot=N_BOOT)
     # leave-one-member-out
     if len(members) > 2:
         out["leave_one_out"] = {m: scores(y, average([runs[o]["oof"] for o in members if o != m]).argmax(-1))["strict_f1"]
@@ -269,8 +277,9 @@ def slices_section(y, dev, preds: dict):
     bins = [(0, 256), (256, 384), (384, 512), (512, 10_000)]
     for name, pred in preds.items():
         s = {"by_tutor": {t: scores(y[tut == t], pred[tut == t]) | {"n": int((tut == t).sum())} for t in tutors},
-             "by_length": {f"{lo}-{hi}": scores(y[(lengths >= lo) & (lengths < hi)], pred[(lengths >= lo) & (lengths < hi)])
-                           | {"n": int(((lengths >= lo) & (lengths < hi)).sum())} for lo, hi in bins},
+             # bins include their upper edge, so the last one is exactly the inputs the old format cut (> 512)
+             "by_length": {f"{lo}-{hi}": scores(y[(lengths > lo) & (lengths <= hi)], pred[(lengths > lo) & (lengths <= hi)])
+                           | {"n": int(((lengths > lo) & (lengths <= hi)).sum())} for lo, hi in bins},
              "per_class": {k: v for k, v in scores(y, pred).items() if k.startswith("f1_")}}
         cut = lengths > 512
         s["cut_rows"] = {"n": int(cut.sum()), "acc": float((pred[cut] == y[cut]).mean()),
