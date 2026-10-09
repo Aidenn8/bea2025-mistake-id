@@ -244,10 +244,10 @@
       <p>The reply becomes the first segment of a sentence pair and the history the second. If the pair is
         longer than 512 tokens, the history is shortened from the middle: it keeps its first 96 tokens,
         which hold the problem statement, and as much of its end as fits, which holds the student's latest
-        turn and so the mistake itself. The two parts are joined by an ellipsis. Replies keep up to 252
-        tokens, which only matters for degenerate ones: the 16 development replies that are longer all come
-        from Phi-3, which kept generating invented follow-up turns after its actual reply, and the reply
-        itself is at the start. On the test set, between 199 and 331 histories are shortened this way,
+        turn and so the mistake itself. The two parts are joined by an ellipsis. A reply longer than 256
+        tokens is cut to its first 252, which only matters for degenerate ones: the 15 or 16 development
+        replies this affects (depending on the tokenizer) all come from Phi-3, which kept generating invented
+        follow-up turns after its actual reply, and the reply itself is at the start. On the test set, between 199 and 331 histories are shortened this way,
         depending on the model's tokenizer.</p>
 
       <h3>Training recipe</h3>
