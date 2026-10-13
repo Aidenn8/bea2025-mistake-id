@@ -79,12 +79,27 @@
           <p class="dnote">one square = 5 replies</p>
         </div>
         <div class="dblock">
-          <p class="dlab">Official test set, 2025</p>
-          <div class="kv">
-            <div><span>macro-F1</span><b>{{ala.official_test.strict_f1|3}}</b></div>
-            <div><span>rank</span><b>{{ala.official_test.rank|raw}} / {{ala.official_test.teams|raw}}</b></div>
-            <div><span>winner</span><b>0.718</b></div>
+          <div class="sys">
+            <div>
+              <p class="dlab"><i class="key"></i>Submitted, 2025</p>
+              <p class="model">BERT-base, one model</p>
+              <dl class="rows">
+                <div><dt>CV F1</dt><dd>{{ala.cv_grouped.pooled.strict_f1|3}}</dd></div>
+                <div><dt>test F1</dt><dd>{{ala.official_test.strict_f1|3}}</dd></div>
+                <div><dt>rank</dt><dd>{{ala.official_test.rank|raw}} / {{ala.official_test.teams|raw}}</dd></div>
+              </dl>
+            </div>
+            <div>
+              <p class="dlab"><i class="key new"></i>New, 2026</p>
+              <p class="model">BERT, RoBERTa, MPNet, ModernBERT</p>
+              <dl class="rows">
+                <div><dt>CV F1</dt><dd class="new">{{final.ensemble_crossfit_offsets.strict_f1|3}}</dd></div>
+                <div><dt>test F1</dt><!--IF official_scores.final--><dd class="new">{{official_scores.final.strict_f1|3}}</dd><!--ELSE--><dd class="pending">pending</dd><!--ENDIF--></div>
+                <div><dt>rank</dt><!--IF official_scores.final.rank--><dd>{{official_scores.final.rank|raw}} / {{ala.official_test.teams|raw}}</dd><!--ELSE--><dd class="pending">&mdash;</dd><!--ENDIF--></div>
+              </dl>
+            </div>
           </div>
+          <p class="dnote">New: 20 models averaged, with a tuned decision rule. Test-set winner 0.718.</p>
         </div>
         <nav class="dash-toc" aria-label="Contents">
           <p class="dlab">Contents</p>

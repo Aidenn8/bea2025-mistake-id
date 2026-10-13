@@ -345,7 +345,9 @@ def main():
     if off.exists():
         summary["official_scores"] = json.loads(off.read_text())
         if "final" in summary["official_scores"]:
-            summary["official_new"] = [summary["official_scores"]["final"]["strict_f1"], "New system"]
+            new = summary["official_scores"]["final"]
+            summary["official_new"] = [new["strict_f1"], "New system"]
+            new.setdefault("rank", sum(r[3] > new["strict_f1"] for r in lb["rows"]) + 1)
     (RES / "summary.json").write_text(json.dumps(round_floats(summary), indent=1))
     print(json.dumps(round_floats({k: summary[k] for k in ("ala",)}), indent=1)[:3000])
     for name, s in summary["systems"].items():
