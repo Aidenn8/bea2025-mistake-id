@@ -14,8 +14,10 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark } }
 :root[data-theme="dark"] { color-scheme: dark }
 * { box-sizing: border-box }
-html { -webkit-text-size-adjust: 100% }
-body { background: var(--bg); color: var(--ink); font: 400 17px/1.62 var(--sans); margin: 0; padding: 64px 32px 88px;
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto } }
+section[id] { scroll-margin-top: 16px }
+body { background: var(--bg); color: var(--ink); font: 400 17px/1.62 var(--sans); margin: 0; padding: 40px 32px 88px;
   font-optical-sizing: auto; letter-spacing: -0.003em; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale }
 .page { max-width: var(--max); margin: 0 auto }
 a:focus-visible, [tabindex]:focus-visible { outline: 2px solid #fff; outline-offset: 3px }
@@ -35,8 +37,23 @@ pre { font: 13px/1.6 var(--mono); color: var(--ink2); background: var(--soft); b
   padding: 14px 16px; overflow-x: auto; margin: 0 0 16px }
 .old { color: #e0a33a } .new { color: #6cb4e4 }
 
+/* ---- navigation line */
+nav.top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 24px;
+  font-size: 14.5px; margin-bottom: 56px }
+nav.top .brand { color: var(--ink2); text-decoration: none }
+nav.top .links { display: flex; flex-wrap: wrap; gap: 4px 22px }
+nav.top .links a { color: var(--muted); text-decoration: none }
+nav.top .links a:hover { color: var(--ink) }
+
 /* ---- title block */
 .titleblock { padding-bottom: 36px }
+.eyebrow { font: 400 13px/1.4 var(--mono); color: var(--muted); margin: 0 0 22px; letter-spacing: 0 }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px }
+.cbtn { display: inline-flex; align-items: center; gap: 9px; font: 500 13px/1 var(--mono); color: var(--ink); background: var(--soft);
+  border: 1px solid var(--rule-strong); border-radius: 6px; padding: 10px 13px; text-decoration: none; white-space: nowrap }
+.cbtn:hover { border-color: var(--ink); background: #171717 }
+.cbtn .arr { color: var(--muted) }
+.cbtn:hover .arr { color: var(--ink) }
 h1 { font: 500 clamp(2.1rem, 4.3vw, 3.45rem)/1.08 var(--sans); letter-spacing: -0.032em; margin: 0 0 20px; max-width: 1020px; text-wrap: balance }
 .subtitle { font: 400 clamp(1.15rem, 1.9vw, 1.4rem)/1.4 var(--sans); letter-spacing: -0.012em; color: var(--ink2); margin: 0 0 14px; max-width: 900px; text-wrap: balance }
 .meta { color: var(--muted); font-size: 15px; margin: 0 }
@@ -101,14 +118,17 @@ ol.refs li::marker { content: "[" counter(list-item) "]\2002"; color: var(--mute
 .colophon { border-top: 1px solid var(--rule); padding-top: 24px; margin-top: 8px; font-size: 14px; line-height: 1.6; color: var(--muted);
   display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); column-gap: var(--gap) }
 .colophon p { margin: 0 0 6px; max-width: var(--measure) }
+.colophon a { color: var(--muted) }
+.colophon a:hover { color: var(--ink) }
 @media (max-width: 960px) {
-  body { padding: 40px 20px 64px }
+  body { padding: 32px 20px 64px }
+  nav.top { margin-bottom: 40px }
   .row, .colophon { grid-template-columns: minmax(0, 1fr); padding-top: 34px }
   .lab { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px }
   .lab .no { margin-top: 0 }
 }
 @media (max-width: 640px) {
-  body { padding: 28px 16px 56px; font-size: 16.5px }
+  body { padding: 24px 16px 56px; font-size: 16.5px }
   .overview .body > p { font-size: 17.5px }
   .stats { grid-template-columns: repeat(2, minmax(0, 1fr)) }
   .stat b { font-size: 25px }

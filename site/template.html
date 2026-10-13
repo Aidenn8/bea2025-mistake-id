@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tutor Mistake Identification</title>
 <meta name="description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
+<meta name="author" content="Aiden Huang">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://aidenn8.github.io/bea2025-mistake-id/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Cpath d='M8.5 16.5l5 5L24 10' fill='none' stroke='%233A95D0' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Aiden Huang">
+<meta property="og:title" content="Did the tutor notice the mistake? Auditing and rebuilding a BEA 2025 shared-task classifier">
+<meta property="og:description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
+<meta property="og:url" content="https://aidenn8.github.io/bea2025-mistake-id/">
+<meta property="og:image" content="https://aidenn8.github.io/bea2025-mistake-id/images/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Macro-F1 of the submitted recipe and the new system under conversation-grouped cross-validation">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -17,11 +31,23 @@
 </head>
 <body>
 <main class="page">
+  <nav class="top" aria-label="Page"><a class="brand" href="#">Tutor mistake identification</a><div class="links">
+    <a href="#audit">Audit</a>
+    <a href="#method">Method</a>
+    <a href="#results">Results</a>
+    <a href="https://github.com/Aidenn8/bea2025-mistake-id">Code</a></div></nav>
+
   <header class="titleblock">
+    <p class="eyebrow">BEA 2025 shared task &middot; Track 1, mistake identification &middot; MRBench &middot; ACL 2025</p>
     <h1>Did the tutor notice the mistake? Auditing and rebuilding a BEA 2025 shared-task classifier</h1>
     <p class="subtitle">Our submission to the BEA 2025 shared task placed 28th of 44. This is what was wrong with it, and a
       stronger system built from what the audit found.</p>
-    <p class="meta">Aiden Huang &middot; October 2026 &middot; <a href="https://github.com/Aidenn8/bea2025-mistake-id">source on GitHub</a></p>
+    <p class="meta">Aiden Huang &middot; October 2026</p>
+    <div class="actions">
+      <a class="cbtn" href="https://github.com/Aidenn8/bea2025-mistake-id">source on GitHub<span class="arr">&nearr;</span></a>
+      <a class="cbtn" href="https://github.com/Aidenn8/bea2025-mistake-id/blob/research/results/summary.json">all results<span class="arr">&nearr;</span></a>
+      <a class="cbtn" href="https://arxiv.org/abs/2507.10579">shared-task paper<span class="arr">&nearr;</span></a>
+    </div>
   </header>
 
   <section class="row overview" id="overview" aria-labelledby="overview-h">
@@ -506,8 +532,13 @@
   </section>
 
   <footer class="colophon">
-    <p>The 2025 submission was a team effort by team ALA. The audit, the evaluation protocol and the new system described
-      here are my own work. Code under the MIT licence; data under CC BY-SA 4.0 from the shared-task organisers.</p>
+    <div>Tutor mistake identification</div>
+    <div>
+      <p><a href="https://github.com/Aidenn8">Aiden Huang</a> &middot; 2026 &middot; <a href="https://github.com/Aidenn8/bea2025-mistake-id">source on GitHub</a>
+        &middot; code under the MIT License; MRBench data from the shared-task organisers under CC BY-SA 4.0.</p>
+      <p>The 2025 submission was a team effort by team ALA. The audit, the evaluation protocol and the new system
+        described here are my own work.</p>
+    </div>
   </footer>
 
 </main>

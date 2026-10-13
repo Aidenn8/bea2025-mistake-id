@@ -3,7 +3,7 @@
 An audit of our team's submission to the [BEA 2025 Shared Task](https://sig-edu.org/sharedtask/2025)
 (Track 1, Mistake Identification), and a stronger system built from what the audit found.
 
-**Report: [aidenn8.github.io/bea2025-mistake-id](https://aidenn8.github.io/bea2025-mistake-id/)** ([`docs/index.html`](docs/index.html), built from `docs/template.html` and `results/summary.json`)
+**Report: [aidenn8.github.io/bea2025-mistake-id](https://aidenn8.github.io/bea2025-mistake-id/)** ([`docs/index.html`](docs/index.html), built from `site/template.html` and `results/summary.json`)
 
 Given the end of a maths tutoring dialogue in which a student has just made a mistake, and one tutor's
 next reply, the task is to say whether the reply recognises the mistake: *Yes*, *To some extent* or

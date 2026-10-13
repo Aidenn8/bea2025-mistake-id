@@ -1,4 +1,4 @@
-"""Build docs/index.html from docs/template.html and results/summary.json.
+"""Build docs/index.html from site/template.html and results/summary.json.
 
     python scripts/build_report.py
 
@@ -85,7 +85,7 @@ def build(template: str, data: dict) -> str:
 
 def main():
     data = json.loads((ROOT / "results" / "summary.json").read_text())
-    template = (ROOT / "docs" / "template.html").read_text()
+    template = (ROOT / "site" / "template.html").read_text()
     html = build(template, data)
     (ROOT / "docs" / "index.html").write_text(html)
     print(f"wrote docs/index.html ({len(PLACEHOLDER.findall(template))} numbers filled from results/summary.json)")
