@@ -24,7 +24,32 @@
     <p class="meta">Aiden Huang &middot; October 2026</p>
   </header>
 
-  <!--OVERVIEW-->
+  <section class="row overview" id="overview" aria-labelledby="overview-h">
+    <div class="lab"><h2 id="overview-h">Summary</h2></div>
+    <div class="body">
+      <p>In April 2025 our team, ALA, entered the BEA 2025 shared task with a fine-tuned BERT model that judges whether
+        an AI tutor's reply recognises a student's mistake. It scored macro-F1 0.636 on the hidden test set, 28th of 44.
+        Rebuilding it showed that the number was partly luck. Its validation set leaked, long dialogues lost the reply
+        being judged, nothing countered the class imbalance, and under an honest evaluation the same recipe scores
+        0.576, below a bag-of-words baseline that trains in seconds.</p>
+      <p>I fixed the measurement first, then the model. The new system reads the reply before the history, trains with a
+        class-weighted loss and a tuned schedule, and moves its decision threshold toward the rare classes. Under the same
+        evaluation it scores 0.669, and its F1 on the hardest class,
+        &ldquo;To some extent&rdquo;, rises from 0.10 to
+        0.34. Two additions that sounded promising, multi-task
+        supervision and a four-model ensemble, made no measurable difference.</p>
+      <div class="stats">
+        <div class="stat"><b class="old">0.576</b><p>submitted recipe, conversation-grouped
+          cross-validation</p></div>
+        <div class="stat"><b class="new">0.669</b><p>new system, same
+          evaluation</p></div>
+        <div class="stat"><b>0.10<span> &rarr; </span>0.34</b><p>F1 on
+          &ldquo;To some extent&rdquo;, the class that decides the ranking</p></div>
+        <div class="stat"><b>0.636</b><p>official test
+          macro-F1 of the 2025 submission; the new system's is pending</p></div>
+      </div>
+    </div>
+  </section>
 
   <section class="row" id="task" aria-labelledby="task-h">
     <div class="lab"><h2 id="task-h">The task</h2></div>
@@ -117,14 +142,26 @@
         <figcaption><b>Official Track 1 leaderboard</b>, each team's best submission
           <a class="cite" href="#ref-1">[1]</a>.</figcaption>
       </figure>
-      <!--ALA-REPRO-->
+      <h3>Reproducing it</h3>
+      <p>I re-implemented the notebook's training exactly (same tokenizer, input string, optimiser,
+        schedule, batch size, epochs and the same 496 validation replies, replayed index for index from
+        its random split) and retrained it on a laptop GPU. Training loss averaged 0.508 over the run
+        against the notebook's 0.527, but the validation score was not reproduced: macro-F1
+        0.543, not 0.643. The reason is the rarest class. The retrained model
+        predicted &ldquo;To some extent&rdquo; for 1 of 496 validation
+        replies and 2 of 1,547 test replies, so its F1 on that class, a third of the score,
+        was zero. Two more retrainings with different random seeds scored 0.517
+        and 0.638. Only the second predicted &ldquo;To some extent&rdquo; at all
+        (9 times), and only it came close to the notebook's 0.643. The recipe
+        barely learns the class, whether it predicts it at all depends on the random seed, and the submitted model
+        happened to land on the better side.</p>
     </div>
   </section>
 
   <section class="row" id="audit" aria-labelledby="audit-h">
     <div class="lab"><h2 id="audit-h">What went wrong</h2></div>
     <div class="body">
-      <p>Reading the notebook again, and re-running it, turned up four problems. Each one either hid how good
+      <p>Reading the notebook again, and re-running it, turned up five problems. Each one either hid how good
         the model really was or limited how good it could be.</p>
 
       <h3>1. The validation set leaked</h3>
@@ -133,7 +170,14 @@
         dialogue in the training data. The test set, by contrast, consists of dialogues the model has never
         seen. A validation score measured this way answers an easier question than the one the leaderboard
         asks, and it cannot be trusted to choose between models.</p>
-      <!--AUDIT-LEAK-->
+      <p>Measured directly, the leak did little to this particular recipe. Under five-fold cross-validation split
+        by reply, as the notebook split its data, it scores 0.567
+        (0.542&ndash;0.595); with each conversation kept in one
+        fold, 0.576 (0.545&ndash;0.608).
+        A model that barely learns the rare classes has little to gain from having seen a sibling reply, so the
+        notebook's 0.643 owes more to the seed lottery above than to the leak. The leak matters all the same: models
+        that do use the reply's wording gain about three points from it (the table in section 5), enough to change
+        which of two models looks better.</p>
 
       <h3>2. Long dialogues lost the reply being judged</h3>
       <p>The input put the dialogue history first and the reply last, then cut everything after token 512.
@@ -163,7 +207,30 @@
         <li>The tokenizer was reloaded from <code>distilbert-base-uncased</code> for the BERT model. I checked
           this one: the two tokenizers produce identical ids, so it did no harm.</li>
       </ul>
-      <!--AUDIT-BASELINE-->
+
+      <h3>5. A much simpler model did better</h3>
+      <p>The team never compared BERT with a simple baseline. A bag-of-words model, TF-IDF features of the
+        reply alone fed to a logistic regression, takes seconds to train. Under the honest evaluation below
+        it scores macro-F1 0.624, against 0.576
+        for the submitted recipe. Most of what the fine-tuned transformer knew could be read off the reply's
+        words.</p>
+      <div class="tbl">
+        <p class="tcap"><b>Cheap reference points</b> <span>Macro-F1, development set, 5-fold cross-validation</span></p>
+        <div class="tscroll"><table class="bt res">
+          <thead><tr><th>Model</th><th class="n">Folds by conversation</th><th class="n">Folds by reply (leaky)</th></tr></thead>
+          <tbody>
+            <tr><td>Always &ldquo;Yes&rdquo;</td><td class="n">0.292</td><td class="n dim">&ndash;</td></tr>
+            <tr><td>Each tutor's most common label</td><td class="n">0.514</td><td class="n dim">&ndash;</td></tr>
+            <tr><td>TF-IDF + logistic regression, history only</td><td class="n">0.325</td><td class="n">0.289</td></tr>
+            <tr><td>TF-IDF + logistic regression, reply only</td><td class="n">0.624</td><td class="n">0.655</td></tr>
+            <tr><td>TF-IDF + logistic regression, both</td><td class="n">0.614</td><td class="n">0.645</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <p>The table also shows how the leak works. A model that sees only the history cannot tell one
+        tutor's reply from another's, and it gains nothing from the leaky split. Models that read the reply
+        gain about three points, because replies to the same dialogue share its numbers and wording, and
+        some are duplicated outright.</p>
     </div>
   </section>
 
@@ -176,17 +243,30 @@
         <li><b>Conversation-grouped cross-validation.</b> The 2,476 development replies are split into five
           folds such that every reply to a conversation (identical histories count as one conversation) sits
           in the same fold, with the label mix balanced across folds. Each fold is predicted by a model
-          trained on the other four, giving one honest prediction for every reply.</li>
+          trained on the other four, giving one honest prediction for every reply. This is not a new idea:
+          the fifth-placed team, BD, also grouped its folds by dialogue <a class="cite" href="#ref-10">[10]</a>.</li>
         <li><b>One number per system.</b> Macro-F1 is computed over all 2,476 pooled predictions. The 95%
           intervals come from a bootstrap that resamples whole conversations, 2,000 times, since replies to
           the same conversation are not independent. Differences between two systems are bootstrapped on the
           same resamples, which makes them much tighter than the individual intervals.</li>
         <li><b>Calibrated against reality.</b> The old system is run through the same protocol, so its
           cross-validated score can be compared with its known official test score of 0.636.</li>
-        <li><b>The test set is used once.</b> All design decisions were made on cross-validation. The final
-          system's test predictions were scored once on the organisers' post-competition submission server.</li>
+        <li><b>The test set is used once.</b> All design decisions were made on cross-validation.
+          The final system's test predictions are to be scored once
+          on the organisers' post-competition submission server; that score is not in yet.</li>
       </ul>
-      <!--PROTOCOL-CALIBRATION-->
+      <figure>
+        <div class="fscroll"><img src="images/protocol.png" alt="Dot plot of the submitted recipe's macro-F1 under each way of measuring it: reported validation 0.643, three retrainings on the same split, reply-level cross-validation, conversation-level cross-validation and the official test score of 0.636."></div>
+        <figcaption><b>One recipe, many scores.</b> Hollow: the number the 2025 notebook printed. Dots: the same
+          code retrained here. Bars are 95% intervals from the conversation bootstrap. Diamond: the official test
+          score of the submitted model.</figcaption>
+      </figure>
+      <p>Run through the protocol, the submitted recipe scores 0.576
+        (0.545&ndash;0.608), well below both its printed
+        validation score and its test score. That is consistent with the reproduction above: the recipe's typical
+        model predicts &ldquo;To some extent&rdquo; almost never (17 times in 2,476 replies here), and the submitted
+        model was a fortunate exception. Comparing new systems against this recipe through the same protocol is
+        the fair comparison; comparing them with 0.636 would credit the old system with its luck.</p>
     </div>
   </section>
 
@@ -200,10 +280,10 @@
       <p>The reply becomes the first segment of a sentence pair and the history the second. If the pair is
         longer than 512 tokens, the history is shortened from the middle: it keeps its first 96 tokens,
         which hold the problem statement, and as much of its end as fits, which holds the student's latest
-        turn and so the mistake itself. The two parts are joined by an ellipsis. Replies keep up to 252
-        tokens, which only matters for degenerate ones: the 16 development replies that are longer all come
-        from Phi-3, which kept generating invented follow-up turns after its actual reply, and the reply
-        itself is at the start. On the test set, between 199 and 331 histories are shortened this way,
+        turn and so the mistake itself. The two parts are joined by an ellipsis. A reply longer than 256
+        tokens is cut to its first 252, which only matters for degenerate ones: the 15 or 16 development
+        replies this affects (depending on the tokenizer) all come from Phi-3, which kept generating invented
+        follow-up turns after its actual reply, and the reply itself is at the start. On the test set, between 199 and 331 histories are shortened this way,
         depending on the model's tokenizer.</p>
 
       <h3>Training recipe</h3>
@@ -248,9 +328,181 @@
     </div>
   </section>
 
-  <!--RESULTS-->
+  <section class="row" id="results" aria-labelledby="results-h">
+    <div class="lab"><h2 id="results-h">Results</h2></div>
+    <div class="body">
+      <p>Under the evaluation protocol the final system scores macro-F1
+        <span class="new">0.669</span>
+        (0.641&ndash;0.698),
+        against <span class="old">0.576</span> for the submitted recipe, a difference of
+        +0.093 (+0.064 to +0.123). The decision rule
+        helps the old recipe too: given the same rule it reaches 0.606, and the like-for-like
+        gain is +0.063 (+0.039 to +0.091).
+        The reply-only TF-IDF baseline from the audit, 0.624, is the more
+        sobering reference: the new system clears it by about four and a half points.</p>
+      <figure>
+        <div class="fscroll"><img src="images/ladder.png" alt="Dot plot of cross-validated macro-F1 for each step of the method. The submitted recipe scores 0.576, or 0.606 with the decision rule; adding the input fix, the training recipe and multi-task heads on BERT gives 0.619, 0.650 and 0.640 with the rule; the full recipe on RoBERTa, MPNet and ModernBERT gives 0.660, 0.663 and 0.632; the ensemble of the four gives 0.669; an exploratory conversation-aware stage gives 0.659. A dashed line marks the TF-IDF baseline at about 0.62."></div>
+        <figcaption><b>Each step, measured the same way.</b> Hollow: the most probable class. Filled: with the tuned
+          decision rule, cross-fitted, and its 95% interval from the conversation bootstrap. The BERT steps are cumulative.
+          Dashed: TF-IDF and logistic regression on the reply alone.</figcaption>
+      </figure>
 
-  <!--TAIL-->
+      <h3>What each step contributed</h3>
+      <p>Differences below are paired: both systems are scored on the same bootstrap resamples of conversations,
+        with the decision rule applied to both.</p>
+      <ul>
+        <li><b>Input.</b> Reply first, history trimmed from the middle:
+          0.619 against 0.606
+          (+0.013, interval &minus;0.018 to
+          +0.045). Within noise here, which is expected: only
+          94 development inputs were long enough for the old format to cut, against 12% of the
+          test set. Without the rule this model never predicted &ldquo;To some extent&rdquo; at all, which is why its hollow
+          marker sits so low.</li>
+        <li><b>Training recipe.</b> Warm-up, a higher learning rate and the class weights:
+          0.650 (+0.031, interval
+          +0.001 to +0.061),
+          the largest single step and the only one on BERT whose interval excludes zero.</li>
+        <li><b>Multi-task heads.</b> 0.640
+          (&minus;0.010, interval
+          &minus;0.028 to +0.008):
+          no gain. The extra labels made the probabilities rank &ldquo;To some extent&rdquo; slightly better (one-vs-rest
+          AUC 0.706 to 0.713) without
+          improving the decisions. The full recipe was fixed before any result was seen, so the heads stay in the final
+          system; this result says they could be dropped.</li>
+        <li><b>Backbones.</b> With the full recipe and the rule, RoBERTa scores 0.660,
+          MPNet 0.663 and ModernBERT 0.632. MPNet, the
+          backbone the fifth-placed team chose <a class="cite" href="#ref-10">[10]</a>, is the strongest single model.</li>
+        <li><b>Ensemble.</b> Averaging all four: 0.669, which is
+          +0.007 (&minus;0.015 to
+          +0.029) above MPNet alone with the same rule. The ensemble is no worse than its
+          best member and cost four times the training; on this evidence a single MPNet would do.</li>
+      </ul>
+
+      <h3>Where the gain comes from</h3>
+      <p>Almost all of it is the rarest class. F1 for &ldquo;To some extent&rdquo; rises from
+        0.10 to 0.34 and for
+        &ldquo;No&rdquo; from 0.70 to 0.75, while
+        &ldquo;Yes&rdquo; barely moves (0.92 to 0.91).
+        The tuned rule adds 1.0 to the log-probability of &ldquo;To some extent&rdquo; and
+        0.3 to that of &ldquo;No&rdquo;: the system needs much less evidence before it calls a reply
+        uncertain.</p>
+      <figure>
+        <div class="fscroll"><img src="images/per_class.png" alt="Horizontal bars of per-class F1 for the submitted recipe and the new system. Yes: 0.92 and 0.91. To some extent: 0.10 and 0.34. No: 0.70 and 0.75."></div>
+        <figcaption><b>F1 per class</b>, cross-validated. Macro-F1 is the mean of the three.</figcaption>
+      </figure>
+      <figure>
+        <div class="fscroll"><img src="images/confusion.png" alt="Two confusion matrices. The submitted recipe predicts Yes for 88% of To some extent replies and 37% of No replies. The new system predicts To some extent for 41% of those replies and No for 69% of No replies, at the cost of calling 7% of Yes replies To some extent."></div>
+        <figcaption><b>Confusion matrices</b>, rows are the true labels. The old recipe sends 88% of &ldquo;To some
+          extent&rdquo; replies to Yes. The new system recovers 71 of the 174, at the price of
+          calling 128 of the 1,932 Yes replies uncertain.</figcaption>
+      </figure>
+      <p>The same trade shows by slice. On the longest dialogues, the ones the old format cut, accuracy rises from
+        79% to 84%; elsewhere it
+        drops by one to three points, the price of predicting the rare classes more often. Replies from human tutors are the hardest
+        for both systems. For expert tutors accuracy falls (73% to
+        63%) while macro-F1 rises (0.31 to
+        0.43), because the old recipe never found their &ldquo;To some extent&rdquo;
+        replies; for novices both rise.</p>
+      <figure>
+        <div class="fscroll"><img src="images/by_length.png" alt="Bar chart of accuracy by input length for the submitted recipe and the new system: 87% and 86% up to 256 tokens, 85% and 84% for 256 to 384, 86% and 82% for 384 to 512, and 79% and 84% over 512 tokens."></div>
+        <figcaption><b>Accuracy by input length</b> in the submitted format. Only the last group was cut by it.</figcaption>
+      </figure>
+      <figure>
+        <div class="fscroll"><img src="images/by_tutor.png" alt="Dot plot of accuracy by tutor for the two systems. GPT-4 96% for both; Llama 3.1 405B 94% to 95%; Phi-3 89% to 90%; Mistral 90% for both; Sonnet 86% to 84%; Gemini 86% to 83%; Llama 3.1 8B 81% to 80%; expert humans 73% to 63%; novice humans 54% to 61%."></div>
+        <figcaption><b>Accuracy by tutor</b>, submitted recipe to new system. Accuracy is not the task's metric; it is
+          shown because per-tutor macro-F1 is unstable when a tutor has few replies of a class.</figcaption>
+      </figure>
+
+      <h3>What did not help</h3>
+      <p>Replies to the same dialogue are judged against the same mistake, so a reply that is vaguer than its siblings may
+        be the uncertain one. An exploratory second stage gave a logistic regression each reply's ensemble probabilities
+        together with summaries of its siblings'. It scored 0.659, which is
+        &minus;0.010 against the ensemble alone, and the sibling information itself
+        was worth +0.002 (&minus;0.010
+        to +0.014) against a control with only the reply's own probabilities.
+        It is not part of the final system.</p>
+
+      <h3>On the test set</h3>
+      <p>The test labels were never released, so the test score has to come from the
+        organisers' post-competition server, and it is not in yet. The final system's predictions for the
+        1,547 test replies are ready: they call 153 replies &ldquo;To some
+        extent&rdquo; and 261 &ldquo;No&rdquo;, against 138
+        and 270 in the hidden labels, where a replica of the submitted model calls
+        2 and 242. The two systems agree on
+        85% of test replies and on 80% of the 186 whose reply the
+        old format cut.</p>
+    </div>
+  </section>
+
+  <section class="row" id="limits" aria-labelledby="limits-h">
+    <div class="lab"><h2 id="limits-h">Limitations</h2></div>
+    <div class="body">
+      <ul>
+        <li><b>Little data.</b> 2,476 replies in 287 conversations. The 95% intervals are about
+          three points either side, so steps of a point or two cannot be told from noise.</li>
+        <li><b>Cross-validation is not the test set.</b> The test dialogues are longer and their labels less one-sided, and
+          the decision rule's offsets were tuned to the development label mix; they may over- or under-call the rare
+          classes on test.</li>
+        <li><b>Choices made after looking.</b> The steps of the method were chosen after the audit, and the audit after
+          seeing how the old system scored. Only the make-up of the final system was fixed before any result, and only the
+          test score is free of tuning.</li>
+        <li><b>One seed per configuration</b> under cross-validation. On a single split, three seeds of the old recipe
+          ranged from 0.517 to 0.638; the new recipe's
+          seed spread was not measured.</li>
+        <li><b>The labels.</b> Annotators agree substantially but not perfectly (&kappa; about 0.65
+          <a class="cite" href="#ref-1">[1]</a>), which caps what any system can score against them.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="row" id="repro" aria-labelledby="repro-h">
+    <div class="lab"><h2 id="repro-h">Reproducibility</h2></div>
+    <div class="body">
+      <p>The repository holds the code, one configuration file per model, every fold's held-out and test-set
+        probabilities, and <code>results/summary.json</code>. Every number on this page is filled from that file when the
+        page is built, and the build fails if one is missing, so the text cannot drift from the results. All training ran
+        on a 16&nbsp;GB Apple M2 laptop (PyTorch, MPS backend) under a thermal guard; a fold took 25 to 40 minutes and the
+        whole set of runs about a day. The MRBench data are the organisers', under CC BY-SA 4.0, and are downloaded from
+        their repository rather than redistributed.</p>
+    </div>
+  </section>
+
+  <section class="row" id="refs" aria-labelledby="refs-h">
+    <div class="lab"><h2 id="refs-h">References</h2></div>
+    <div class="body">
+      <ol class="refs">
+        <li id="ref-1">Kochmar, E. et al. (2025). Findings of the BEA 2025 Shared Task on Pedagogical Ability Assessment of
+          AI-powered Tutors. <i>BEA Workshop, ACL 2025</i>. <a href="https://arxiv.org/abs/2507.10579">arXiv:2507.10579</a></li>
+        <li id="ref-2">Maurya, K. K., Srivatsa, K. V. A., Petukhova, K. and Kochmar, E. (2025). Unifying AI Tutor Evaluation:
+          An Evaluation Taxonomy for Pedagogical Ability Assessment of LLM-Powered AI Tutors. <i>NAACL 2025</i>.
+          <a href="https://aclanthology.org/2025.naacl-long.57">ACL Anthology</a></li>
+        <li id="ref-3">Macina, J. et al. (2023). MathDial: A Dialogue Tutoring Dataset with Rich Pedagogical Properties
+          Grounded in Math Reasoning Problems. <i>Findings of EMNLP 2023</i>.
+          <a href="https://aclanthology.org/2023.findings-emnlp.372">ACL Anthology</a></li>
+        <li id="ref-4">Wang, R. E., Zhang, Q., Robinson, C., Loeb, S. and Demszky, D. (2024). Bridging the Novice-Expert Gap
+          via Models of Decision-Making: A Case Study on Remediating Math Mistakes. <i>NAACL 2024</i>.
+          <a href="https://aclanthology.org/2024.naacl-long.120">ACL Anthology</a></li>
+        <li id="ref-5">Devlin, J., Chang, M.-W., Lee, K. and Toutanova, K. (2019). BERT: Pre-training of Deep Bidirectional
+          Transformers for Language Understanding. <i>NAACL 2019</i>. <a href="https://arxiv.org/abs/1810.04805">arXiv:1810.04805</a></li>
+        <li id="ref-6">Liu, Y. et al. (2019). RoBERTa: A Robustly Optimized BERT Pretraining Approach.
+          <a href="https://arxiv.org/abs/1907.11692">arXiv:1907.11692</a></li>
+        <li id="ref-7">Song, K., Tan, X., Qin, T., Lu, J. and Liu, T.-Y. (2020). MPNet: Masked and Permuted Pre-training for
+          Language Understanding. <i>NeurIPS 2020</i>. <a href="https://arxiv.org/abs/2004.09297">arXiv:2004.09297</a></li>
+        <li id="ref-8">Reimers, N. and Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks.
+          <i>EMNLP-IJCNLP 2019</i>. <a href="https://arxiv.org/abs/1908.10084">arXiv:1908.10084</a></li>
+        <li id="ref-9">Warner, B. et al. (2024). Smarter, Better, Faster, Longer: A Modern Bidirectional Encoder for Fast,
+          Memory Efficient, and Long Context Finetuning and Inference. <a href="https://arxiv.org/abs/2412.13663">arXiv:2412.13663</a></li>
+        <li id="ref-10">Rohan, S. et al. (2025). BD at BEA 2025 Shared Task: MPNet Ensembles for Pedagogical Mistake
+          Identification and Localization in AI Tutor Responses. <i>BEA Workshop, ACL 2025</i>, 1266&ndash;1277.
+          <a href="https://aclanthology.org/2025.bea-1.102">ACL Anthology</a></li>
+      </ol>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <p>The 2025 submission was a team effort by team ALA. The audit, the evaluation protocol and the new system described
+      here are my own work. Code under the MIT licence; data under CC BY-SA 4.0 from the shared-task organisers.</p>
+  </footer>
 
 </main>
 </body>

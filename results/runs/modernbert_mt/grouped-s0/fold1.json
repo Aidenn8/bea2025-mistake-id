@@ -1,0 +1,81 @@
+{
+ "config": {
+  "name": "modernbert_mt",
+  "model": "answerdotai/ModernBERT-base",
+  "input_format": "pair",
+  "max_len": 512,
+  "head_tokens": 96,
+  "lr": 2e-05,
+  "epochs": 4,
+  "batch_size": 16,
+  "micro_batch": 2,
+  "warmup_ratio": 0.1,
+  "weight_decay": 0.01,
+  "max_grad_norm": 1.0,
+  "class_weights": [
+   0.7375,
+   2.4575,
+   1.6853
+  ],
+  "aux_weight": 0.5,
+  "group_by_length": true,
+  "seed": 42,
+  "precision": "fp32",
+  "notes": "Full recipe on ModernBERT-base.",
+  "extra": {}
+ },
+ "split": "grouped",
+ "fold_seed": 0,
+ "fold": 1,
+ "n_train": 1990,
+ "n_val": 486,
+ "history": [
+  {
+   "epoch": 1,
+   "train_loss": 1.3974962704145728,
+   "elapsed_s": 543.7653949260712
+  },
+  {
+   "epoch": 2,
+   "train_loss": 1.0716414101758793,
+   "elapsed_s": 1141.9017360210419
+  },
+  {
+   "epoch": 3,
+   "train_loss": 0.881597747035961,
+   "elapsed_s": 1735.4616017341614
+  },
+  {
+   "epoch": 4,
+   "train_loss": 0.7437346031917399,
+   "elapsed_s": 2314.886454105377
+  }
+ ],
+ "train_seconds": 2314.8871228694916,
+ "total_seconds": 2466.6325402259827,
+ "encoder_stats_train": {
+  "history_cut": 125,
+  "response_cut": 12,
+  "guard_trimmed": 0,
+  "n": 1990
+ },
+ "device": "mps",
+ "versions": {
+  "python": "3.12.15",
+  "torch": "2.14.1",
+  "transformers": "5.18.0",
+  "sklearn": "1.9.1",
+  "machine": "arm64",
+  "system": "macOS-14.4-arm64-arm-64bit"
+ },
+ "finished": "2026-10-09T06:20:03+00:00",
+ "val_scores": {
+  "strict_f1": 0.6105579263474,
+  "strict_acc": 0.8148148148148148,
+  "lenient_f1": 0.8057553956834532,
+  "lenient_acc": 0.9053497942386831,
+  "f1_Yes": 0.8947368421052632,
+  "f1_To some extent": 0.2702702702702703,
+  "f1_No": 0.6666666666666666
+ }
+}

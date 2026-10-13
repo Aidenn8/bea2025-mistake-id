@@ -152,15 +152,17 @@
         predicted &ldquo;To some extent&rdquo; for {{ala.notebook_split.pred_counts.1|int}} of 496 validation
         replies and {{ala.notebook_split.test_pred_counts.1|int}} of 1,547 test replies, so its F1 on that class, a third of the score,
         was zero. Two more retrainings with different random seeds scored {{ala.notebook_split_seed1.strict_f1|3}}
-        and {{ala.notebook_split_seed2.strict_f1|3}}. The recipe barely learns the class, and whether it predicts it at
-        all is close to a coin toss; the submitted model happened to land on the better side.</p>
+        and {{ala.notebook_split_seed2.strict_f1|3}}. Only the second predicted &ldquo;To some extent&rdquo; at all
+        ({{ala.notebook_split_seed2.pred_counts.1|int}} times), and only it came close to the notebook's 0.643. The recipe
+        barely learns the class, whether it predicts it at all depends on the random seed, and the submitted model
+        happened to land on the better side.</p>
     </div>
   </section>
 
   <section class="row" id="audit" aria-labelledby="audit-h">
     <div class="lab"><h2 id="audit-h">What went wrong</h2></div>
     <div class="body">
-      <p>Reading the notebook again, and re-running it, turned up four problems. Each one either hid how good
+      <p>Reading the notebook again, and re-running it, turned up five problems. Each one either hid how good
         the model really was or limited how good it could be.</p>
 
       <h3>1. The validation set leaked</h3>
@@ -169,7 +171,14 @@
         dialogue in the training data. The test set, by contrast, consists of dialogues the model has never
         seen. A validation score measured this way answers an easier question than the one the leaderboard
         asks, and it cannot be trusted to choose between models.</p>
-      <!--AUDIT-LEAK-->
+      <p>Measured directly, the leak did little to this particular recipe. Under five-fold cross-validation split
+        by reply, as the notebook split its data, it scores {{ala.cv_leaky.pooled.strict_f1|3}}
+        ({{ala.cv_leaky.strict_f1_ci.0|3}}&ndash;{{ala.cv_leaky.strict_f1_ci.1|3}}); with each conversation kept in one
+        fold, {{ala.cv_grouped.pooled.strict_f1|3}} ({{ala.cv_grouped.strict_f1_ci.0|3}}&ndash;{{ala.cv_grouped.strict_f1_ci.1|3}}).
+        A model that barely learns the rare classes has little to gain from having seen a sibling reply, so the
+        notebook's 0.643 owes more to the seed lottery above than to the leak. The leak matters all the same: models
+        that do use the reply's wording gain about three points from it (the table in section 5), enough to change
+        which of two models looks better.</p>
 
       <h3>2. Long dialogues lost the reply being judged</h3>
       <p>The input put the dialogue history first and the reply last, then cut everything after token 512.
@@ -200,7 +209,7 @@
           this one: the two tokenizers produce identical ids, so it did no harm.</li>
       </ul>
 
-      <h3>5. A much simpler model was almost as good</h3>
+      <h3>5. A much simpler model did better</h3>
       <p>The team never compared BERT with a simple baseline. A bag-of-words model, TF-IDF features of the
         reply alone fed to a logistic regression, takes seconds to train. Under the honest evaluation below
         it scores macro-F1 {{baselines.tfidf_response_grouped.strict_f1|3}}, against {{ala.cv_grouped.pooled.strict_f1|3}}

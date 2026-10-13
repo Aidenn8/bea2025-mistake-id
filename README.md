@@ -3,7 +3,7 @@
 An audit of our team's submission to the [BEA 2025 Shared Task](https://sig-edu.org/sharedtask/2025)
 (Track 1, Mistake Identification), and a stronger system built from what the audit found.
 
-**Report: <!--PAGES-URL-->** (`docs/index.html`)
+**Report:** [`docs/index.html`](docs/index.html), built from `docs/template.html` and `results/summary.json`.
 
 Given the end of a maths tutoring dialogue in which a student has just made a mistake, and one tutor's
 next reply, the task is to say whether the reply recognises the mistake: *Yes*, *To some extent* or
@@ -11,10 +11,11 @@ next reply, the task is to say whether the reply recognises the mistake: *Yes*, 
 
 | System | Cross-validated macro-F1 | Official test macro-F1 |
 |---|---|---|
-| ALA, our 2025 submission (BERT) | <!--TBD--> | 0.636 (28th of 44) |
-| New system (ensemble) | <!--TBD--> | <!--TBD--> |
+| ALA, our 2025 submission (BERT), retrained | 0.576 (0.606 with the new decision rule) | 0.636 (28th of 44) |
+| New system (four-backbone ensemble + decision rule) | 0.669 (95% interval 0.641-0.698) | pending (post-competition server) |
 
-Cross-validation is grouped by conversation (see the report for why that matters here).
+Cross-validation is grouped by conversation (see the report for why that matters here). The best single model,
+MPNet with the same recipe and rule, scores 0.663; the ensemble's extra 0.007 is within noise.
 
 ## What is in this repository
 
