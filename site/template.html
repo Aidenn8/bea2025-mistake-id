@@ -6,7 +6,7 @@
 <title>Tutor Mistake Identification</title>
 <meta name="description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
 <meta name="author" content="Aiden Huang">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#fcfcf7">
 <link rel="canonical" href="https://aidenn8.github.io/bea2025-mistake-id/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Cpath d='M8.5 16.5l5 5L24 10' fill='none' stroke='%233A95D0' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta property="og:type" content="article">
@@ -21,7 +21,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
 <script>
   window.MathJax = { tex: { inlineMath: [["\\(", "\\)"]], displayMath: [["\\[", "\\]"]] }, svg: { fontCache: "global" },
@@ -30,25 +30,83 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js" async></script>
 </head>
 <body>
-<main class="page">
-  <nav class="top" aria-label="Page"><a class="brand" href="#">Tutor mistake identification</a><div class="links">
-    <a href="#audit">Audit</a>
-    <a href="#method">Method</a>
-    <a href="#results">Results</a>
-    <a href="https://github.com/Aidenn8/bea2025-mistake-id">Code</a></div></nav>
-
-  <header class="titleblock">
-    <p class="eyebrow">BEA 2025 shared task &middot; Track 1, mistake identification &middot; MRBench &middot; ACL 2025</p>
-    <h1>Did the tutor notice the mistake? Auditing and rebuilding a BEA 2025 shared-task classifier</h1>
-    <p class="subtitle">Our submission to the BEA 2025 shared task placed 28th of 44. This is what was wrong with it, and a
-      stronger system built from what the audit found.</p>
-    <p class="meta">Aiden Huang &middot; October 2026</p>
-    <div class="actions">
-      <a class="cbtn" href="https://github.com/Aidenn8/bea2025-mistake-id">source on GitHub<span class="arr">&nearr;</span></a>
-      <a class="cbtn" href="https://github.com/Aidenn8/bea2025-mistake-id/blob/research/results/summary.json">all results<span class="arr">&nearr;</span></a>
-      <a class="cbtn" href="https://arxiv.org/abs/2507.10579">shared-task paper<span class="arr">&nearr;</span></a>
+<div class="frame">
+  <header class="masthead">
+    <div class="mast-row">
+      <h1>Did the tutor notice the mistake?</h1>
+      <nav class="top" aria-label="Sections">
+        <a href="#audit">Audit</a>
+        <a href="#method">Method</a>
+        <a href="#results">Results</a>
+        <a class="boxed" href="https://github.com/Aidenn8/bea2025-mistake-id">Code</a>
+      </nav>
     </div>
+    <p class="byline">Aiden Huang</p>
   </header>
+
+  <div class="layout">
+  <div class="intro">
+    <p class="lead">An audit and rebuild of a BEA 2025 shared-task classifier. Our team&rsquo;s submission placed 28th of
+      44; this is what was wrong with it, and a stronger system built from what the audit found.</p>
+    <div class="qbtns">
+      <a class="qbtn" href="#audit">What went wrong?</a>
+      <a class="qbtn" href="#protocol">How was it measured?</a>
+      <a class="qbtn" href="#results">How much better is it?</a>
+      <a class="qbtn" href="#limits">What is uncertain?</a>
+    </div>
+    <p class="pubmeta">Published October 2026<span class="sep">|</span><a href="https://github.com/Aidenn8/bea2025-mistake-id">Source</a><span class="sep">|</span><a href="https://github.com/Aidenn8/bea2025-mistake-id/blob/research/results/summary.json">All results</a><span class="sep">|</span><a href="https://arxiv.org/abs/2507.10579">Shared-task paper</a></p>
+  </div>
+
+  <aside class="dash" aria-label="Key numbers and contents">
+    <div class="dash-in">
+      <p class="chip">BEA 2025 &middot; Track 1</p>
+      <div class="dash-grid">
+        <div class="dblock">
+          <p class="dlab">Macro-F1, conversation-grouped CV</p>
+          <ul class="bars">
+            <li style="--v: {{ala.cv_grouped.pooled.strict_f1|3}}"><span>Submitted recipe</span><span class="track"><i></i></span><b>{{ala.cv_grouped.pooled.strict_f1|3}}</b></li>
+            <li class="base" style="--v: {{baselines.tfidf_response_grouped.strict_f1|3}}"><span>TF-IDF baseline</span><span class="track"><i></i></span><b>{{baselines.tfidf_response_grouped.strict_f1|3}}</b></li>
+            <li class="new" style="--v: {{final.ensemble_crossfit_offsets.strict_f1|3}}"><span>New system</span><span class="track"><i></i></span><b>{{final.ensemble_crossfit_offsets.strict_f1|3}}</b></li>
+          </ul>
+          <p class="dnote">bars start at 0.50</p>
+        </div>
+        <div class="dblock">
+          <p class="dlab">&ldquo;To some extent&rdquo; replies found, of <span id="sq-total">174</span></p>
+          <div class="sq-row"><div class="who"><span>Submitted recipe</span><b>{{systems.ala_bert.confusion.1.1|raw}}</b></div>
+            <div class="sq" data-row="{{systems.ala_bert.confusion.1.0|raw}},{{systems.ala_bert.confusion.1.1|raw}},{{systems.ala_bert.confusion.1.2|raw}}" aria-hidden="true"></div></div>
+          <div class="sq-row"><div class="who"><span>New system</span><b class="new">{{final.confusion.1.1|raw}}</b></div>
+            <div class="sq new" data-row="{{final.confusion.1.0|raw}},{{final.confusion.1.1|raw}},{{final.confusion.1.2|raw}}" aria-hidden="true"></div></div>
+          <p class="dnote">one square = 5 replies</p>
+        </div>
+        <div class="dblock">
+          <p class="dlab">Official test set, 2025</p>
+          <div class="kv">
+            <div><span>macro-F1</span><b>{{ala.official_test.strict_f1|3}}</b></div>
+            <div><span>rank</span><b>{{ala.official_test.rank|raw}} / {{ala.official_test.teams|raw}}</b></div>
+            <div><span>winner</span><b>0.718</b></div>
+          </div>
+        </div>
+        <nav class="dash-toc" aria-label="Contents">
+          <p class="dlab">Contents</p>
+          <ol class="toc">
+          <li><a href="#overview">Summary</a></li>
+          <li><a href="#task">The task</a></li>
+          <li><a href="#data">Data</a></li>
+          <li><a href="#ala">The submitted system</a></li>
+          <li><a href="#audit">What went wrong</a></li>
+          <li><a href="#protocol">Evaluation protocol</a></li>
+          <li><a href="#method">New method</a></li>
+          <li><a href="#results">Results</a></li>
+          <li><a href="#limits">Limitations</a></li>
+          <li><a href="#repro">Reproducibility</a></li>
+          <li><a href="#refs">References</a></li>
+          </ol>
+        </nav>
+      </div>
+    </div>
+  </aside>
+
+<main class="page">
 
   <section class="row overview" id="overview" aria-labelledby="overview-h">
     <div class="lab"><h2 id="overview-h">Summary</h2></div>
@@ -532,7 +590,6 @@
   </section>
 
   <footer class="colophon">
-    <div>Tutor mistake identification</div>
     <div>
       <p><a href="https://github.com/Aidenn8">Aiden Huang</a> &middot; 2026 &middot; <a href="https://github.com/Aidenn8/bea2025-mistake-id">source on GitHub</a>
         &middot; code under the MIT License; MRBench data from the shared-task organisers under CC BY-SA 4.0.</p>
@@ -542,5 +599,36 @@
   </footer>
 
 </main>
+  </div>
+</div>
+<script>
+  // Squares in the data panel (one per five replies) and the current section in the contents.
+  (function () {
+    var total = 0;
+    document.querySelectorAll(".sq[data-row]").forEach(function (el) {
+      var row = el.dataset.row.split(",").map(Number), n = row.reduce(function (a, b) { return a + b; }, 0);
+      var on = Math.round(row[1] / 5), all = Math.ceil(n / 5);
+      total = n;
+      for (var i = 0; i < all; i++) {
+        var q = document.createElement("i");
+        if (i < on) q.className = "on";
+        el.appendChild(q);
+      }
+    });
+    if (total) document.getElementById("sq-total").textContent = total;
+    var links = {};
+    document.querySelectorAll(".toc a").forEach(function (a) { links[a.getAttribute("href").slice(1)] = a; });
+    if (!("IntersectionObserver" in window)) return;
+    var seen = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
+      var current = null;
+      document.querySelectorAll("main section[id]").forEach(function (sec) { if (!current && seen[sec.id]) current = sec.id; });
+      if (!current) return;
+      Object.keys(links).forEach(function (k) { links[k].classList.toggle("is-current", k === current); });
+    }, { rootMargin: "-15% 0px -70% 0px" });
+    document.querySelectorAll("main section[id]").forEach(function (sec) { io.observe(sec); });
+  })();
+</script>
 </body>
 </html>

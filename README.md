@@ -27,7 +27,7 @@ MPNet with the same recipe and rule, scores 0.663; the ensemble's extra 0.007 is
 | `results/` | out-of-fold and test predictions for every run, `summary.json` with every reported number |
 | `docs/` | the report page and its figures |
 | `tests/` | checks on splits, metrics, encoding, ensembling and the submission format |
-| `tools/` | thermal guard for long runs on a fanless laptop; bundled Inter font for the figures |
+| `tools/` | thermal guard for long runs on a fanless laptop; bundled IBM Plex Mono font for the figures |
 
 ## Reproducing the results
 
@@ -64,5 +64,5 @@ here. If you use them, cite:
 ## Credits
 
 The 2025 submission (team ALA) was a team effort. The audit, the evaluation protocol and the new
-system in this repository are my own work. Code is MIT-licensed; the Inter font in `tools/fonts/` is
+system in this repository are my own work. Code is MIT-licensed; the fonts in `tools/fonts/` (IBM Plex Mono, Inter) are
 under the SIL Open Font License.

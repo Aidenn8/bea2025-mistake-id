@@ -4,10 +4,10 @@
 
 Every figure is drawn at the size the page shows it (100 CSS px per inch; TEXT is the
 width of a text line, FULL the width of the content column), so type reads the same size
-in every figure. Black background and Inter, to sit on the report page. Series are
-labelled directly where that is clearer than a legend. Colours were checked with a
-colour-vision-deficiency validator against the black background: orange is the old
-(submitted) system, blue the new one; the three classes use aqua, violet and red-orange.
+in every figure. Cream background and IBM Plex Mono, to sit on the report page. Series are
+labelled directly where that is clearer than a legend. Black is the old (submitted) system and
+green the new one, told apart by lightness as well as hue; the three classes run from ink
+(Yes) through green (To some extent) to light grey (No).
 Figures whose inputs do not exist yet are skipped.
 """
 import json
@@ -30,28 +30,28 @@ import numpy as np  # noqa: E402
 RES = ROOT / "results"
 OUT = ROOT / "docs" / "images"
 OUT.mkdir(parents=True, exist_ok=True)
-for f in sorted((ROOT / "tools" / "fonts").glob("Inter-*.ttf")):
+for f in sorted((ROOT / "tools" / "fonts").glob("*.ttf")):
     fm.fontManager.addfont(str(f))
 
 FULL, TEXT = 9.4, 7.6
-BG, INK, DIM, FAINT, GRID, AXIS = "#000000", "#f0f0f0", "#a8a8a8", "#6e6e6e", "#1e1e1e", "#4a4a4a"
-OLD, NEW = "#C28100", "#3A95D0"
-CLS = {"Yes": "#199e70", "To some extent": "#9085e9", "No": "#d95926"}
-NEUTRAL = "#7c7c7c"
-ANN = 9.0
+BG, INK, DIM, FAINT, GRID, AXIS = "#fcfcf7", "#161616", "#57564f", "#9c9b92", "#e6e5dc", "#b8b7ad"
+OLD, NEW = "#161616", "#3d7350"
+CLS = {"Yes": "#2b2b27", "To some extent": "#5f9070", "No": "#d3d1c6"}
+NEUTRAL = "#a3a198"
+ANN = 8.4
 plt.rcParams.update({
     "figure.dpi": 100, "savefig.dpi": 200, "figure.constrained_layout.use": True,
     "figure.facecolor": BG, "axes.facecolor": BG, "savefig.facecolor": BG,
-    "font.family": "Inter", "font.size": 9.8, "axes.unicode_minus": True,
-    "text.color": INK, "axes.labelcolor": DIM, "axes.labelsize": 9.6, "axes.labelpad": 6,
-    "axes.titlesize": 10.3, "axes.titleweight": "medium", "axes.titlelocation": "left", "axes.titlepad": 12,
+    "font.family": "IBM Plex Mono", "font.size": 9.0, "axes.unicode_minus": True,
+    "text.color": INK, "axes.labelcolor": DIM, "axes.labelsize": 8.8, "axes.labelpad": 6,
+    "axes.titlesize": 9.4, "axes.titleweight": "medium", "axes.titlelocation": "left", "axes.titlepad": 12,
     "axes.titlecolor": INK, "axes.edgecolor": AXIS, "axes.linewidth": 0.8,
     "axes.spines.top": False, "axes.spines.right": False, "axes.spines.left": False,
     "axes.grid": True, "axes.grid.axis": "y", "grid.color": GRID, "grid.linewidth": 0.8, "axes.axisbelow": True,
     "xtick.color": AXIS, "ytick.color": AXIS, "xtick.labelcolor": DIM, "ytick.labelcolor": DIM,
-    "xtick.labelsize": 9.2, "ytick.labelsize": 9.2, "xtick.major.size": 3.5, "ytick.major.size": 0,
+    "xtick.labelsize": 8.4, "ytick.labelsize": 8.4, "xtick.major.size": 3.5, "ytick.major.size": 0,
     "xtick.major.width": 0.8, "xtick.minor.size": 0, "ytick.minor.size": 0, "ytick.major.pad": 6,
-    "legend.frameon": False, "legend.fontsize": 9.2, "legend.labelcolor": INK, "legend.handlelength": 1.2,
+    "legend.frameon": False, "legend.fontsize": 8.4, "legend.labelcolor": INK, "legend.handlelength": 1.2,
     "legend.borderaxespad": 0.2, "legend.columnspacing": 1.4,
     "lines.linewidth": 1.7, "lines.markersize": 5, "patch.linewidth": 0,
 })
@@ -97,7 +97,7 @@ def fig_label_mix(S):
             w = by[t][c] / n
             ax.barh(i, w, left=left, height=0.62, color=CLS[c], edgecolor=BG, linewidth=1.5)
             if w >= 0.07:
-                say(ax, (left + w / 2, i), f"{w:.0%}", color="#ffffff", ha="center", size=8.4)
+                say(ax, (left + w / 2, i), f"{w:.0%}", color=INK if c == "No" else "#ffffff", ha="center", size=7.8)
             left += w
         say(ax, (1.0, i), f"n = {n}", color=FAINT, dx=8, size=8.4)
     ax.set_yticks(range(len(tutors)), [TUTOR_NAME.get(t, t) for t in tutors])
@@ -122,11 +122,11 @@ def fig_lengths(S):
         ax.hist(L[L > 512], bins=bins, color=OLD, edgecolor=BG, linewidth=0.6)
         ax.axvline(512, color=DIM, lw=1, ls=(0, (3, 3)))
         name = "Development set" if split == "dev" else "Test set"
-        ax.set_title(f"{name}  ·  {len(L):,} responses", fontsize=9.8, pad=8)
+        ax.set_title(f"{name}  ·  {len(L):,} responses", fontsize=9.2, pad=8)
         pct = st["over_512"] / len(L)
         say(ax, (690, ax.get_ylim()[1] * 0.78),
             f"{st['over_512']} inputs ({pct:.0%}) longer than 512 tokens:\nthe end of the input, where the tutor's\n"
-            f"response sits, is cut off; {st['response_lost']} lose it entirely", color=INK, va="top", size=8.6)
+            f"response sits, is cut off; {st['response_lost']} lose it entirely", color=INK, va="top", size=8.0)
         ax.set_ylabel("Responses")
     axes[1].set_xlabel("Length of the submitted system's input (BERT tokens): history, then response")
     axes[1].set_xlim(0, 1400)
@@ -143,11 +143,11 @@ def fig_leaderboard(S, new_score=None, new_label=None):
     ax.grid(axis="x", visible=False)
     ax.grid(axis="y", visible=True)
     x = np.arange(1, len(rows) + 1)
-    colors = [OLD if r[1] == "ALA" else "#3c3c3c" for r in rows]
+    colors = [OLD if r[1] == "ALA" else "#d9d8ce" for r in rows]
     ax.bar(x, f1, width=0.72, color=colors)
     ala = next(r for r in rows if r[1] == "ALA")
     say(ax, (ala[0], ala[3]), f"ALA (ours, submitted)\n#{ala[0]} of {len(rows)}, {ala[3]:.3f}", color=INK, dy=6,
-        ha="center", va="bottom", size=8.6)
+        ha="center", va="bottom", size=8.0)
     say(ax, (1, rows[0][3]), f"1st: {rows[0][3]:.3f}", color=DIM, dy=6, ha="left", va="bottom", size=8.4)
     base = lb["baseline_majority_test"]["strict_f1"]
     edge = len(rows) + 0.7
@@ -156,7 +156,7 @@ def fig_leaderboard(S, new_score=None, new_label=None):
     if new_score is not None:
         rank = int((f1 > new_score).sum()) + 1
         ax.plot([0.3, edge], [new_score, new_score], color=NEW, lw=1.4, zorder=3)
-        say(ax, (edge, new_score), f"{new_label}\n{new_score:.3f} (#{rank})", color=INK, dx=6, ha="left", size=8.6)
+        say(ax, (edge, new_score), f"{new_label}\n{new_score:.3f} (#{rank})", color=INK, dx=6, ha="left", size=8.0)
     ax.set_ylim(0, 0.8)
     ax.set_xlim(0, len(rows) + 9)
     ax.spines["bottom"].set_bounds(0.3, len(rows) + 0.7)
@@ -189,8 +189,8 @@ def fig_protocol(S):
             ax.plot([lo, hi], [y, y], color=OLD, lw=1.6, solid_capstyle="butt")
         face = {"hollow": BG, "dot": OLD, "solid": OLD}[style]
         ax.plot(v, y, marker="D" if style == "solid" else "o", ms=7.5, mfc=face, mec=OLD, mew=1.6, ls="none", zorder=3)
-        say(ax, (max(v, hi or v), y), f"{v:.3f}", color=INK, dx=10, size=8.8)
-    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.8)
+        say(ax, (max(v, hi or v), y), f"{v:.3f}", color=INK, dx=10, size=8.2)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.2)
     ax.set_xlim(0.45, 0.75)
     ax.set_xlabel("Macro-F1 (strict) of the submitted system's recipe")
     save(fig, "protocol.png")
@@ -226,21 +226,21 @@ def fig_ladder(S):
     hbar_axes(ax)
     tf = S["baselines"]["tfidf_response_grouped"]["strict_f1"]
     ax.axvline(tf, color=FAINT, lw=0.9, ls=(0, (3, 3)), zorder=0)
-    say(ax, (tf, -0.75), "TF-IDF + logistic regression on the reply", color=DIM, dx=5, ha="left", va="center", size=8.2)
+    say(ax, (tf, -0.75), "TF-IDF baseline (reply only)", color=DIM, dx=5, ha="left", va="center", size=7.8)
     for i, (label, am, rule, lo, hi, col, mk) in enumerate(rows):
         y = len(rows) - 1 - i
         ax.plot([lo, hi], [y, y], color=col, lw=1.6, solid_capstyle="butt", zorder=2)
         if am is not None:
             ax.plot(am, y, marker="o", ms=6.5, mfc=BG, mec=col, mew=1.4, ls="none", zorder=3)
         ax.plot(rule, y, marker=mk, ms=7.5 if mk == "o" else 7, color=col, ls="none", zorder=4)
-        say(ax, (hi, y), f"{rule:.3f}", color=INK, dx=8, size=8.8)
-    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.8)
+        say(ax, (hi, y), f"{rule:.3f}", color=INK, dx=8, size=8.2)
+    ax.set_yticks(range(len(rows)), [r[0] for r in rows][::-1], fontsize=8.2)
     ax.set_xlim(0.5, 0.75)
     ax.set_ylim(-1.1, len(rows) - 0.4)
     ax.set_xlabel("Macro-F1 (strict), conversation-grouped 5-fold cross-validation")
     h = [plt.Line2D([], [], marker="o", ls="none", mfc=BG, mec=DIM, mew=1.4, ms=6.5),
          plt.Line2D([], [], marker="o", ls="-", color=DIM, ms=7.5, lw=1.6)]
-    ax.legend(h, ["Most probable class", "With the tuned decision rule, 95% interval"], loc="lower left",
+    ax.legend(h, ["Most probable class", "Tuned decision rule, 95% interval"], loc="lower left",
               bbox_to_anchor=(0, 1.0), ncol=2)
     save(fig, "ladder.png")
 
@@ -258,7 +258,7 @@ def fig_per_class(S):
         ys = np.arange(len(classes))[::-1] + (0.18 if j == 0 else -0.18)
         ax.barh(ys, vals, height=0.34, color=col, label=name)
         for y, v in zip(ys, vals):
-            say(ax, (v, y), f"{v:.2f}", color=INK, dx=6, size=8.6)
+            say(ax, (v, y), f"{v:.2f}", color=INK, dx=6, size=8.0)
     ax.set_yticks(np.arange(len(classes))[::-1], classes)
     ax.set_xlim(0, 1.05)
     ax.set_xlabel("F1 per class, cross-validated")
@@ -277,12 +277,13 @@ def fig_confusion(S):
         ax.grid(False)
         frac = cm / cm.sum(1, keepdims=True)
         rgb = np.array(matplotlib.colors.to_rgb(col))
-        img = np.array([[rgb * f + np.array([0.06, 0.06, 0.06]) * (1 - f) for f in row] for row in frac])
+        bg = np.array(matplotlib.colors.to_rgb(BG))
+        img = np.array([[rgb * f + bg * (1 - f) for f in row] for row in frac])
         ax.imshow(img, aspect="equal")
         for i in range(3):
             for j in range(3):
-                ax.text(j, i, f"{frac[i, j]:.0%}\n{cm[i, j]}", ha="center", va="center", fontsize=8.6,
-                        color="#ffffff" if frac[i, j] < 0.75 else "#000000")
+                ax.text(j, i, f"{frac[i, j]:.0%}\n{cm[i, j]}", ha="center", va="center", fontsize=8.0,
+                        color="#ffffff" if frac[i, j] >= 0.45 else INK)
         ax.set_xticks(range(3), names)
         ax.set_yticks(range(3), names)
         ax.tick_params(length=0)
@@ -290,7 +291,7 @@ def fig_confusion(S):
             s.set_visible(False)
         ax.set_xlabel("Predicted")
         ax.set_ylabel("True label")
-        ax.set_title(title, fontsize=9.8)
+        ax.set_title(title, fontsize=9.2)
     save(fig, "confusion.png")
 
 
@@ -305,7 +306,7 @@ def fig_by_length(S):
         v = [sl[key]["by_length"][b]["strict_acc"] for b in bins]
         ax.bar(x + dx, v, width=0.32, color=col, label=name)
         for xi, vi in zip(x + dx, v):
-            say(ax, (xi, vi), f"{vi:.0%}", color=INK, dy=4, ha="center", va="bottom", size=8.2)
+            say(ax, (xi, vi), f"{vi:.0%}", color=INK, dy=4, ha="center", va="bottom", size=7.8)
     labels = [f"{b.split('-')[0]}–{b.split('-')[1]}" if b.split("-")[1] != "10000" else f"over {b.split('-')[0]}" for b in bins]
     ns = [sl["ala"]["by_length"][b]["n"] for b in bins]
     ax.set_xticks(x, [f"{lab}\n{n} replies" for lab, n in zip(labels, ns)])
