@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tutor Mistake Identification</title>
+<title>BEA Shared Task Submission Audit</title>
 <meta name="description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
 <meta name="author" content="Aiden Huang">
 <meta name="theme-color" content="#fcfcf7">
@@ -11,7 +11,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Cpath d='M8.5 16.5l5 5L24 10' fill='none' stroke='%233A95D0' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Aiden Huang">
-<meta property="og:title" content="Did the tutor notice the mistake? Auditing and rebuilding a BEA 2025 shared-task classifier">
+<meta property="og:title" content="Analyzing Pedagogical Feedback with a BERT-based Classifier">
 <meta property="og:description" content="An audit of a BEA 2025 shared-task submission for detecting whether AI tutors recognise student mistakes, and a stronger system built from what the audit found.">
 <meta property="og:url" content="https://aidenn8.github.io/bea2025-mistake-id/">
 <meta property="og:image" content="https://aidenn8.github.io/bea2025-mistake-id/images/og.png">
@@ -33,7 +33,7 @@
 <div class="frame">
   <header class="masthead">
     <div class="mast-row">
-      <h1>Did the tutor notice the mistake?</h1>
+      <h1>Analyzing Pedagogical Feedback with a BERT&#8209;based Classifier</h1>
       <nav class="top" aria-label="Sections">
         <a href="#audit">Audit</a>
         <a href="#method">Method</a>
@@ -41,13 +41,15 @@
         <a class="boxed" href="https://github.com/Aidenn8/bea2025-mistake-id">Code</a>
       </nav>
     </div>
-    <p class="byline">Aiden Huang</p>
+    <p class="subtitle">BEA Workshop at ACL&nbsp;2025 (Association for Computational Linguistics)</p>
   </header>
 
   <div class="layout">
   <div class="intro">
-    <p class="lead">An audit and rebuild of a BEA 2025 shared-task classifier. Our team&rsquo;s submission placed 28th of
-      44; this is what was wrong with it, and a stronger system built from what the audit found.</p>
+    <p class="lead">An audit of our team&rsquo;s submission to the shared task at the 2025 BEA workshop, which
+      placed 28th of 44, and an upgraded version of it. I fixed how it was evaluated, had it read the tutor&rsquo;s reply before the dialogue
+      so the reply is never cut off, weighted the rare classes in training and tuned its decision threshold, raising
+      macro&#8209;F1 from 0.576 to 0.669.</p>
     <div class="qbtns">
       <a class="qbtn" href="#audit">What went wrong?</a>
       <a class="qbtn" href="#protocol">How was it measured?</a>
