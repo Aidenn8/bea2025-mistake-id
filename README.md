@@ -3,7 +3,7 @@
 An audit of our team's submission to the [BEA 2025 Shared Task](https://sig-edu.org/sharedtask/2025)
 (Track 1, Mistake Identification), and a stronger system built from what the audit found.
 
-**Report: [aidenn8.github.io/bea2025-mistake-id](https://aidenn8.github.io/bea2025-mistake-id/)** ([`docs/index.html`](docs/index.html), built from `site/template.html` and `results/summary.json`)
+**Report: [aidenn8.github.io/bea2025-mistake-id](https://aidenn8.github.io/bea2025-mistake-id/)**
 
 Given the end of a maths tutoring dialogue in which a student has just made a mistake, and one tutor's
 next reply, the task is to say whether the reply recognises the mistake: *Yes*, *To some extent* or
@@ -16,18 +16,6 @@ next reply, the task is to say whether the reply recognises the mistake: *Yes*, 
 
 Cross-validation is grouped by conversation (see the report for why that matters here). The best single model,
 MPNet with the same recipe and rule, scores 0.663; the ensemble's extra 0.007 is within noise.
-
-## What is in this repository
-
-| Path | Contents |
-|---|---|
-| `mistake_id/` | data loading, splits, metrics, input encoding, training loop, ensembling and decision rule |
-| `scripts/` | experiment runner and queue, baselines, analysis, figures, submission builder |
-| `configs/` | one JSON file per model configuration |
-| `results/` | out-of-fold and test predictions for every run, `summary.json` with every reported number |
-| `docs/` | the report page and its figures |
-| `tests/` | checks on splits, metrics, encoding, ensembling and the submission format |
-| `tools/` | thermal guard for long runs on a fanless laptop; bundled IBM Plex Mono font for the figures |
 
 ## Reproducing the results
 
